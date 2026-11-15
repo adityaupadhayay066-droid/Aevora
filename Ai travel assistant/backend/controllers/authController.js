@@ -124,22 +124,36 @@ async function createSessionAndLog(user, deviceId, userAgent, ipAddress, isTrust
         loginLocation = 'Local Development';
     }
 
-    await Session.create({
-        session_id: sessionId,
-        user_id: user.id,
-        device_id: deviceId,
-        device_type,
-        device_name,
-        os,
-        browser,
-        ip_address: ipAddress,
-        login_location: loginLocation,
-        is_trusted: isTrusted,
-        expires_at: expiresAt
-    });
+    // Generate Refresh Token
+    const refreshToken = generateRefreshToken(user.id, sessionId, deviceId);
+    const rtExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    try {
-        await LoginHistory.create({
+    user.last_login = new Date();
+    user.last_ip = ipAddress;
+
+    // Parallelize session, token, and user updates for high-performance authentication
+    await Promise.all([
+        Session.create({
+            session_id: sessionId,
+            user_id: user.id,
+            device_id: deviceId,
+            device_type,
+            device_name,
+            os,
+            browser,
+            ip_address: ipAddress,
+            login_location: loginLocation,
+            is_trusted: isTrusted,
+            expires_at: expiresAt
+        }),
+        RefreshToken.create({
+            user_id: user.id,
+            token: refreshToken,
+            device_id: deviceId,
+            expires_at: rtExpires
+        }),
+        user.save(),
+        LoginHistory.create({
             user_id: user.id,
             session_id: sessionId,
             device_type,
@@ -148,37 +162,15 @@ async function createSessionAndLog(user, deviceId, userAgent, ipAddress, isTrust
             browser,
             ip_address: ipAddress,
             location: loginLocation
-        });
-    } catch (err) {
-        console.warn('[Session Log Warning]: LoginHistory creation failed:', err.message);
-    }
-
-    user.last_login = new Date();
-    user.last_ip = ipAddress;
-    await user.save();
-
-    // Generate Refresh Token
-    const refreshToken = generateRefreshToken(user.id, sessionId, deviceId);
-    const rtExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    
-    await RefreshToken.create({
-        user_id: user.id,
-        token: refreshToken,
-        device_id: deviceId,
-        expires_at: rtExpires
-    });
-
-    try {
-        await UserActivityLog.create({
+        }).catch(err => console.warn('[Session Log Warning]: LoginHistory creation failed:', err.message)),
+        UserActivityLog.create({
             user_id: user.id,
             event_type: 'LOGIN_SUCCESS',
             ip_address: ipAddress,
             device_info: `${device_type} - ${browser} on ${os}`,
             location: loginLocation
-        });
-    } catch (err) {
-        console.warn('[Session Log Warning]: UserActivityLog creation failed:', err.message);
-    }
+        }).catch(err => console.warn('[Session Log Warning]: UserActivityLog creation failed:', err.message))
+    ]);
 
     return { sessionId, deviceId, device_type, device_name, os, browser, loginLocation, refreshToken };
 }
@@ -433,10 +425,9 @@ const loginUser = async (req, res) => {
             });
         }
 
-        // ─── Successful password → reset counters ───
+        // ─── Successful password → reset counters (persisted in createSessionAndLog or before 2FA challenge) ───
         user.failed_attempts = 0;
         if (user.suspended_until) user.suspended_until = null;
-        await user.save();
 
         // ─── Device detection ───
         const { device_type, device_name, os, browser } = parseUserAgent(userAgent);
@@ -470,6 +461,7 @@ const loginUser = async (req, res) => {
 
         // If 2FA is enabled and device is NOT trusted, we must prompt for 2FA verification code
         if (isTwoFactorEnabled && !isKnownDevice) {
+            await user.save();
             const otpCode = crypto.randomInt(100000, 999999).toString();
             const hashedOtp = crypto.createHash('sha256').update(otpCode).digest('hex');
             const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
