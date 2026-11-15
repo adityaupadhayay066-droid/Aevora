@@ -24,17 +24,27 @@ export default function AdminDashboardHome() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [data, setData] = useState(null);
+    const [activeSosAlerts, setActiveSosAlerts] = useState([]);
     const [growthPeriod, setGrowthPeriod] = useState('weekly');
 
     const fetchDashboard = async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await adminApi.getAnalytics();
-            if (res.data?.success) {
-                setData(res.data);
-            } else {
+            const [res, alertsRes] = await Promise.allSettled([
+                adminApi.getAnalytics(),
+                adminApi.getSecurityAlerts()
+            ]);
+
+            if (res.status === 'fulfilled' && res.value.data?.success) {
+                setData(res.value.data);
+            } else if (res.status === 'rejected' || !res.value?.data?.success) {
                 setError('Failed to fetch platform analytics');
+            }
+
+            if (alertsRes.status === 'fulfilled' && alertsRes.value.data?.success) {
+                const list = alertsRes.value.data.alerts || [];
+                setActiveSosAlerts(list.filter(a => !a.resolved && !a.is_resolved));
             }
         } catch (err) {
             console.error('fetchDashboard error:', err);
@@ -58,6 +68,7 @@ export default function AdminDashboardHome() {
         { title: 'AI Knowledge / RAG', desc: 'Vector document indexing', icon: FileText, path: '/admin/ai-knowledge', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
         { title: 'Search Analytics', desc: 'Live multi-modal travel queries', icon: Search, path: '/admin/searches', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
         { title: 'Reports & Issues', desc: 'Resolve feedback & bug tickets', icon: Flag, path: '/admin/reports', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
+        { title: 'Emergency SOS Incidents', desc: 'Real-time passenger alarms & RPF GPS', icon: ShieldAlert, path: '/admin/sos', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20', badge: activeSosAlerts.length > 0 ? `${activeSosAlerts.length} ACTIVE` : 'SOS' },
         { title: 'Platform Analytics', desc: 'DAU, MAU & revenue metrics', icon: BarChart3, path: '/admin/analytics', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
         { title: 'System Health', desc: 'MySQL, FastAPI & Express status', icon: Activity, path: '/admin/system-health', color: 'text-lime-400 bg-lime-500/10 border-lime-500/20' },
         { title: 'Admin Notifications', desc: 'System alerts & priority inbox', icon: Bell, path: '/admin/notifications', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
@@ -134,6 +145,40 @@ export default function AdminDashboardHome() {
                     </button>
                 </div>
             </div>
+
+            {/* Active Emergency SOS Alert Banner */}
+            {activeSosAlerts.length > 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 animate-pulse shadow-md">
+                            <ShieldAlert className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                                    Critical Passenger Emergency Alert
+                                </span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse">
+                                    {activeSosAlerts.length} Active SOS
+                                </span>
+                            </div>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                                {activeSosAlerts[0]?.details?.emergency_type || 'Passenger SOS'} Reported at {activeSosAlerts[0]?.details?.location_name || activeSosAlerts[0]?.location || 'Transit Corridor'}
+                            </h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-300">
+                                Passenger: {activeSosAlerts[0]?.User?.name || activeSosAlerts[0]?.details?.passenger_name || 'Guest'} • Ref: AEV-SOS-{activeSosAlerts[0]?.id} • RPF responder dispatch pending resolution
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => navigate('/admin/sos')}
+                        className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                    >
+                        <span>Open SOS Command Center</span>
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Quick Admin Modules Launcher Grid */}
             <div className="travel-card p-5 sm:p-6 rounded-2xl">

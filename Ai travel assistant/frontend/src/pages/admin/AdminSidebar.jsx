@@ -5,7 +5,7 @@ import {
     LayoutDashboard, Users, Database, Train, MapPin, 
     Bus, Sparkles, Search, Flag, BarChart3, Activity, 
     Bell, Shield, Settings, LogOut, ChevronLeft, ChevronRight, 
-    Compass, X
+    Compass, X, ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import UserAvatar from './UserAvatar';
@@ -21,6 +21,7 @@ export const ADMIN_NAV_ITEMS = [
     { label: 'AI Assistant', path: '/admin/ai', icon: Sparkles, badge: 'AI' },
     { label: 'Searches & Activity', path: '/admin/searches', icon: Search },
     { label: 'Reports & Issues', path: '/admin/reports', icon: Flag },
+    { label: 'Emergency SOS', path: '/admin/sos', icon: ShieldAlert, badge: 'SOS', badgeColor: 'bg-rose-600 text-white animate-pulse' },
     { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
     { label: 'System Health', path: '/admin/system-health', icon: Activity },
     { label: 'Notifications', path: '/admin/notifications', icon: Bell },
@@ -114,7 +115,7 @@ export default function AdminSidebar({
                                 </span>
                             )}
                             {!collapsed && item.badge && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-xs">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shadow-xs ${item.badgeColor || 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'}`}>
                                     {item.badge}
                                 </span>
                             )}

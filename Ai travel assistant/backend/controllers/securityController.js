@@ -519,27 +519,34 @@ const markDeviceAsTrusted = async (req, res) => {
 const triggerSOS = async (req, res) => {
     const { latitude, longitude, emergency_type = 'General', location_name, note } = req.body;
     try {
-        const user = await User.findByPk(req.user.id);
+        const user = req.user?.id ? await User.findByPk(req.user.id) : null;
+        const passengerName = user?.name || 'Guest Passenger';
+        const passengerEmail = user?.email || 'unregistered_guest@transit.aevora';
         const locDesc = location_name || (latitude && longitude ? `LAT: ${latitude}, LNG: ${longitude}` : 'Unknown Coordinates');
         const details = {
-            message: `CRITICAL SOS TRIGGERED: passenger ${user.name} reported a ${emergency_type} emergency at ${locDesc}.`,
+            message: `CRITICAL SOS TRIGGERED: passenger ${passengerName} reported a ${emergency_type} emergency at ${locDesc}.`,
             emergency_type,
+            passenger_name: passengerName,
+            passenger_email: passengerEmail,
             location_name: location_name || null,
             note: note || null,
+            latitude: latitude || null,
+            longitude: longitude || null,
             responder_status: 'Dispatched',
             rp_helpline: '182 / 112',
             timestamp: new Date()
         };
 
         const alert = await SecurityAlert.create({
-            user_id: req.user.id,
+            user_id: user ? user.id : null,
             alert_type: 'SOS_DISPATCHED',
             ip_address: req.ip || '127.0.0.1',
             location: location_name ? `${location_name} (${latitude}, ${longitude})` : (latitude && longitude ? `LAT: ${latitude}, LNG: ${longitude}` : 'Unknown Coordinates'),
+            resolved: false,
             details
         });
 
-        console.log(`[SOS ALARM] User ${user.email} triggered SOS at [${latitude}, ${longitude}] (${locDesc}). Dispatching RPF Responder...`);
+        console.log(`[SOS ALARM] Passenger (${passengerName} / ${passengerEmail}) triggered SOS at [${latitude}, ${longitude}] (${locDesc}). Dispatching RPF Responder...`);
 
         // Trigger dynamic notification to administrator
         sendEmail({
@@ -547,8 +554,9 @@ const triggerSOS = async (req, res) => {
             subject: '⚠️ CRITICAL ALARM: Passenger SOS Emergency Dispatched',
             html: `
                 <h3>⚠️ CRITICAL EMERGENCY SYSTEM ALERT</h3>
-                <p><strong>Passenger Name:</strong> ${user.name}</p>
-                <p><strong>Email Address:</strong> ${user.email}</p>
+                <p><strong>Incident Reference:</strong> AEV-SOS-${alert.id}</p>
+                <p><strong>Passenger Name:</strong> ${passengerName}</p>
+                <p><strong>Email Address:</strong> ${passengerEmail}</p>
                 <p><strong>Emergency Nature:</strong> ${emergency_type}</p>
                 <p><strong>Reported Location:</strong> ${locDesc}</p>
                 <p><strong>Locked GPS Coordinates:</strong> ${latitude && longitude ? `${latitude}, ${longitude}` : 'Unknown'}</p>
@@ -565,7 +573,9 @@ const triggerSOS = async (req, res) => {
         });
 
         res.status(201).json({
+            success: true,
             message: '🚨 EMERGENCY DISPATCHED: Coordinates & live metrics sent to Railway Protection Force!',
+            alertId: alert.id,
             alert
         });
     } catch (error) {

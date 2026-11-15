@@ -1231,8 +1231,8 @@ const getSecurityAlerts = async (req, res) => {
     try {
         const alerts = await SecurityAlert.findAll({
             order: [['created_at', 'DESC']],
-            limit: 50,
-            include: [{ model: User, attributes: ['id', 'name', 'email'] }]
+            limit: 100,
+            include: [{ model: User, attributes: ['id', 'name', 'email'], required: false }]
         });
         return res.json({ success: true, alerts });
     } catch (error) {
@@ -1246,7 +1246,7 @@ const resolveSecurityAlert = async (req, res) => {
         const { id } = req.params;
         const alert = await SecurityAlert.findByPk(id);
         if (!alert) return res.status(404).json({ success: false, message: 'Alert not found.' });
-        await alert.update({ is_resolved: true });
+        await alert.update({ resolved: true, is_resolved: true });
         return res.json({ success: true, message: 'Security alert resolved.' });
     } catch (error) {
         console.error('[AdminController Error]:', error.message);

@@ -35,6 +35,21 @@ const classDisplayNames = {
   'Volvo AC': 'Volvo Multi-Axle AC'
 };
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 function extractNormalizedFares(transportItem) {
   if (!transportItem) {
     return {};
@@ -503,7 +518,73 @@ export default function BookingModal({ train, onClose }) {
         console.warn("Payment order creation notice:", orderErr.message);
       }
 
-      // 3. Submit transaction attempt (never pass client status: 'Success')
+      // 3. If live Razorpay key is configured, open official Razorpay Checkout modal
+      if (order?.key_id && order.key_id !== 'rzp_test_key') {
+        const loaded = await loadRazorpayScript();
+        if (loaded && window.Razorpay) {
+          const options = {
+            key: order.key_id,
+            amount: order.amount_in_paise || Math.round(totalFare * 100),
+            currency: order.currency || 'INR',
+            name: 'TravelIQ',
+            description: `Booking #${booking.booking_reference || booking.id} (${trip?.train_name || 'Travel Ticket'})`,
+            order_id: order.order_id,
+            prefill: {
+              name: passengers[0]?.name || '',
+              email: passengers[0]?.email || '',
+              contact: passengers[0]?.phone || ''
+            },
+            theme: {
+              color: '#0284C7'
+            },
+            handler: async function (response) {
+              try {
+                setIsProcessing(true);
+                const txnRes = await api.post('/payment/transaction', {
+                  booking_id: booking.id,
+                  gateway_payment_id: response.razorpay_payment_id,
+                  gateway_order_id: response.razorpay_order_id,
+                  gateway_signature: response.razorpay_signature,
+                  amount: totalFare,
+                  payment_method: 'RAZORPAY'
+                });
+                const isConfirmed = txnRes.data.booking_status === 'Confirmed' || txnRes.data.transaction?.status === 'Success';
+                setConfirmedBookingData({
+                  ...booking,
+                  booking_status: isConfirmed ? 'Confirmed' : 'Pending',
+                  payment_status: isConfirmed ? 'Paid' : 'Pending'
+                });
+                setBookingComplete(true);
+                if (isConfirmed) {
+                  toast.success("Payment verified! Ticket booked successfully.");
+                }
+              } catch (verifyErr) {
+                toast.error(verifyErr.response?.data?.message || "Payment verification failed.");
+              } finally {
+                setIsProcessing(false);
+              }
+            },
+            modal: {
+              ondismiss: function () {
+                setConfirmedBookingData({
+                  ...booking,
+                  booking_status: 'Pending',
+                  payment_status: 'Pending'
+                });
+                setBookingComplete(true);
+                toast("Payment checkout closed. You can complete payment within 15 minutes.", { icon: "⏳" });
+                setIsProcessing(false);
+              }
+            }
+          };
+
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+          return;
+        }
+      }
+
+      // 4. Developer sandbox / simulation mode fallback (when gateway keys not configured)
       const paymentMethodName = paymentTab === 'qr'
         ? 'UPI_QR_SANDBOX'
         : paymentTab === 'upi' 

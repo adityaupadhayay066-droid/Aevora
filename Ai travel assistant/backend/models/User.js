@@ -14,30 +14,40 @@ function getEncryptionKey() {
   throw new Error('Encryption key missing: Neither ENCRYPTION_KEY nor JWT_SECRET is configured.');
 }
 const IV_LENGTH = 16;
+const HEX_32_REGEX = /^[0-9a-fA-F]{32}$/;
+const HEX_REGEX = /^[0-9a-fA-F]+$/;
+
+function isEncrypted(text) {
+  if (typeof text !== 'string') return false;
+  const parts = text.split(':');
+  if (parts.length !== 2) return false;
+  const [ivHex, cipherHex] = parts;
+  return HEX_32_REGEX.test(ivHex) && cipherHex.length >= 32 && cipherHex.length % 32 === 0 && HEX_REGEX.test(cipherHex);
+}
 
 function encrypt(text) {
   if (!text) return text;
-  // If already encrypted (contains :), skip
-  if (text.includes(':') && text.split(':').length === 2) return text;
+  // If already encrypted with 32-hex IV, skip to avoid double-encryption
+  if (isEncrypted(text)) return text;
   const key = getEncryptionKey();
   let iv = crypto.randomBytes(IV_LENGTH);
   let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key, 'hex'), iv);
-  let encrypted = cipher.update(text);
+  let encrypted = cipher.update(String(text), 'utf8');
   encrypted = Buffer.concat([encrypted, cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
 function decrypt(text) {
   if (!text) return text;
-  if (!text.includes(':')) return text; // Not encrypted
+  if (!isEncrypted(text)) return text; // Not encrypted
   try {
     let textParts = text.split(':');
-    let iv = Buffer.from(textParts.shift(), 'hex');
-    let encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    let iv = Buffer.from(textParts[0], 'hex');
+    let encryptedText = Buffer.from(textParts[1], 'hex');
     let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(getEncryptionKey(), 'hex'), iv);
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
+    return decrypted.toString('utf8');
   } catch (error) {
     return text; // Fallback to raw text if decryption fails
   }

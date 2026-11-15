@@ -54,6 +54,9 @@ if (process.env.NODE_ENV === 'production') {
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) missingSecrets.push('JWT_SECRET (min 32 chars)');
   if (!process.env.DB_PASSWORD) missingSecrets.push('DB_PASSWORD');
   if (!process.env.INTERNAL_SERVICE_KEY) missingSecrets.push('INTERNAL_SERVICE_KEY');
+  if (!process.env.RAZORPAY_KEY_ID) missingSecrets.push('RAZORPAY_KEY_ID');
+  if (!process.env.RAZORPAY_KEY_SECRET) missingSecrets.push('RAZORPAY_KEY_SECRET');
+  if (!process.env.RAZORPAY_WEBHOOK_SECRET) missingSecrets.push('RAZORPAY_WEBHOOK_SECRET');
 
   if (missingSecrets.length > 0) {
     console.error(`[FATAL] Startup aborted. Missing mandatory production secrets: ${missingSecrets.join(', ')}`);
@@ -85,13 +88,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://challenges.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://challenges.cloudflare.com", "https://checkout.razorpay.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https://maps.gstatic.com", "https://maps.googleapis.com", "blob:"],
-      connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "ws://localhost:5173"],
+      connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "ws://localhost:5173", "https://api.razorpay.com", "https://lumberjack.razorpay.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
-      frameSrc: ["'self'", "https://challenges.cloudflare.com"],
+      frameSrc: ["'self'", "https://challenges.cloudflare.com", "https://api.razorpay.com", "https://checkout.razorpay.com"],
       upgradeInsecureRequests: [],
     },
   }
@@ -269,7 +272,24 @@ sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
     // Ensure distance_from_source column exists on train_schedules for existing databases
     try {
       await sequelize.query('ALTER TABLE train_schedules ADD COLUMN distance_from_source INT NULL');
-    } catch (_) { /* column already exists */ }
+    } catch (colErr) {
+      const isExpected = colErr.original?.code === 'ER_DUP_FIELDNAME' || 
+                         colErr.parent?.code === 'ER_DUP_FIELDNAME' ||
+                         (colErr.message && /duplicate column/i.test(colErr.message));
+      if (!isExpected) {
+        console.error('⚠️ [DB Schema Error] Unexpected error adding distance_from_source column:', colErr.message);
+      }
+    }
+
+    // Ensure SecurityAlerts.user_id allows NULL for guest passenger SOS dispatches
+    try {
+      await sequelize.query('ALTER TABLE SecurityAlerts MODIFY user_id INT NULL');
+    } catch (modErr) {
+      const isExpected = (modErr.message && /already/i.test(modErr.message));
+      if (!isExpected) {
+        console.warn('[DB Init] SecurityAlerts column modification notice:', modErr.message);
+      }
+    }
 
     // Ensure train_stops view is created for deterministic routing
     try {

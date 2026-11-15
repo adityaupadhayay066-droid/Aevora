@@ -9,7 +9,7 @@ const SecurityAlert = sequelize.define('SecurityAlert', {
   },
   user_id: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true
   },
   alert_type: {
     type: DataTypes.STRING,

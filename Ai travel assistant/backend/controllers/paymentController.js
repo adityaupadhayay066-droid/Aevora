@@ -1,5 +1,6 @@
 'use strict';
 const crypto = require('crypto');
+const axios = require('axios');
 const PDFDocument = require('pdfkit');
 const { Transaction, PaymentLog, Booking, User, Trip, Station, Train, TrainSchedule, TrainFare, ProcessedWebhookEvent, sequelize } = require('../models');
 const { transitionBookingState, BOOKING_STATUSES, PAYMENT_STATUSES: BOOKING_PAYMENT_STATUSES } = require('../services/bookingLifecycleService');
@@ -67,6 +68,11 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'Invalid authoritative booking fare.' });
     }
 
+    const hasRazorpayKeys = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+    if (process.env.NODE_ENV === 'production' && !hasRazorpayKeys) {
+      return res.status(503).json({ message: 'Payment gateway service is not configured in production.' });
+    }
+
     // Reuse or create a pending transaction attempt
     let txn = await Transaction.findOne({
       where: {
@@ -77,7 +83,46 @@ const createOrder = async (req, res) => {
     });
 
     if (!txn) {
-      const orderId = `order_${crypto.randomBytes(12).toString('hex')}`;
+      let orderId = null;
+
+      // Integrate official Razorpay Orders API if live gateway credentials exist
+      if (hasRazorpayKeys) {
+        try {
+          const authHeader = 'Basic ' + Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
+          const orderPayload = {
+            amount: Math.round(authoritativeAmount * 100), // in paise
+            currency: 'INR',
+            receipt: `rcpt_${booking.id}_${Date.now()}`.substring(0, 40),
+            notes: {
+              booking_id: String(booking.id),
+              user_id: String(req.user.id),
+              booking_ref: booking.booking_reference || String(booking.id)
+            }
+          };
+          const rzpRes = await axios.post('https://api.razorpay.com/v1/orders', orderPayload, {
+            headers: {
+              'Authorization': authHeader,
+              'Content-Type': 'application/json'
+            },
+            timeout: 10000
+          });
+          if (rzpRes.data && rzpRes.data.id) {
+            orderId = rzpRes.data.id;
+          }
+        } catch (rzpErr) {
+          console.error('[Razorpay Order Creation Failed]:', rzpErr.response?.data || rzpErr.message);
+          if (process.env.NODE_ENV === 'production') {
+            return res.status(502).json({
+              message: 'Failed to create payment order with payment gateway: ' + (rzpErr.response?.data?.error?.description || rzpErr.message)
+            });
+          }
+        }
+      }
+
+      if (!orderId) {
+        orderId = `order_${crypto.randomBytes(12).toString('hex')}`;
+      }
+
       const txnId = `TXN-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
       txn = await Transaction.create({
         booking_id: booking.id,
@@ -94,14 +139,19 @@ const createOrder = async (req, res) => {
       await txn.save();
     }
 
+    const keyId = process.env.RAZORPAY_KEY_ID || (process.env.NODE_ENV === 'production' ? null : 'rzp_test_key');
+
     res.status(200).json({
       success: true,
       order_id: txn.order_id,
       transaction_id: txn.transaction_id,
       amount: authoritativeAmount,
+      amount_in_paise: Math.round(authoritativeAmount * 100),
       currency: 'INR',
       booking_id: booking.id,
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_key'
+      booking_reference: booking.booking_reference,
+      key_id: keyId,
+      is_live: Boolean(hasRazorpayKeys && process.env.RAZORPAY_KEY_ID)
     });
   } catch (error) {
     console.error('[Create Order Error]:', error.message);
@@ -780,10 +830,16 @@ const processRefund = async (req, res) => {
       });
     }
 
-    // Atomic transaction state transition with update locks to prevent concurrent refund races
-    const refundResult = await sequelize.transaction(async (t) => {
+    // Phase 1: Fast atomic DB transaction to claim the refund intent and release locks instantly
+    const claimResult = await sequelize.transaction(async (t) => {
       const lockedBooking = await Booking.findByPk(booking_id, { lock: t.LOCK.UPDATE, transaction: t });
+      if (!lockedBooking) {
+        throw new Error('BOOKING_NOT_FOUND');
+      }
       if (lockedBooking.payment_status === 'Refunded') {
+        throw new Error('ALREADY_REFUNDED');
+      }
+      if (lockedBooking.payment_status === 'Refund Pending' && lockedBooking.booking_status !== 'Expired') {
         throw new Error('ALREADY_REFUNDED');
       }
 
@@ -807,71 +863,105 @@ const processRefund = async (req, res) => {
       const refundCalc = await computeCancellationRefund(lockedBooking, transaction.amount);
       const refundAmount = refundCalc.refundAmount;
 
-      const hasLiveGateway = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
-      let refundId = null;
-      let isSimulated = !hasLiveGateway || !transaction.payment_id?.startsWith('pay_');
-
-      if (refundAmount > 0 && hasLiveGateway && transaction.payment_id?.startsWith('pay_')) {
-        try {
-          const authHeader = 'Basic ' + Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
-          const refundResponse = await axios.post(
-            `https://api.razorpay.com/v1/payments/${transaction.payment_id}/refund`,
-            {
-              amount: Math.round(refundAmount * 100),
-              speed: 'optimum',
-              notes: { booking_id: String(booking_id), reason: reason || 'Customer requested refund', policy_tier: refundCalc.policyTier }
-            },
-            {
-              headers: {
-                'Authorization': authHeader,
-                'Content-Type': 'application/json'
-              },
-              timeout: 10000
-            }
-          );
-          refundId = refundResponse.data?.id;
-          isSimulated = false;
-        } catch (gwErr) {
-          console.error('[Gateway Refund API Failed]:', gwErr.response?.data || gwErr.message);
-          throw new Error('GATEWAY_REFUND_FAILED: ' + (gwErr.response?.data?.error?.description || gwErr.message));
-        }
-      }
-
-      if (!refundId) {
-        refundId = `rfnd_sim_${crypto.randomBytes(10).toString('hex')}`;
-      }
-
-      transaction.status = PAYMENT_STATUSES.REFUNDED;
-      transaction.refund_id = refundId;
-      transaction.refund_amount = refundAmount;
-      await transaction.save({ transaction: t });
-
-      lockedBooking.payment_status = 'Refunded';
+      // Atomically claim the refund in progress
+      lockedBooking.payment_status = 'Refund Pending';
       lockedBooking.booking_status = 'Cancelled';
       await lockedBooking.save({ transaction: t });
+
+      transaction.status = PAYMENT_STATUSES.REFUND_PENDING;
+      await transaction.save({ transaction: t });
+
+      return {
+        transactionId: transaction.id,
+        paymentId: transaction.payment_id,
+        paymentMethod: transaction.payment_method,
+        refundAmount,
+        cancellationCharge: refundCalc.cancellationCharge,
+        policyTier: refundCalc.policyTier
+      };
+    });
+
+    // Phase 2: Gateway Network Call OUTSIDE database transaction (releases pool connection completely)
+    const hasLiveGateway = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+    let refundId = null;
+    let isSimulated = !hasLiveGateway || !claimResult.paymentId?.startsWith('pay_');
+
+    if (claimResult.refundAmount > 0 && hasLiveGateway && claimResult.paymentId?.startsWith('pay_')) {
+      try {
+        const authHeader = 'Basic ' + Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
+        const refundResponse = await axios.post(
+          `https://api.razorpay.com/v1/payments/${claimResult.paymentId}/refund`,
+          {
+            amount: Math.round(claimResult.refundAmount * 100),
+            speed: 'optimum',
+            notes: { booking_id: String(booking_id), reason: reason || 'Customer requested refund', policy_tier: claimResult.policyTier }
+          },
+          {
+            headers: {
+              'Authorization': authHeader,
+              'Content-Type': 'application/json'
+            },
+            timeout: 10000
+          }
+        );
+        refundId = refundResponse.data?.id;
+        isSimulated = false;
+      } catch (gwErr) {
+        console.error('[Gateway Refund API Failed]:', gwErr.response?.data || gwErr.message);
+        // Rollback state back to Paid on gateway rejection
+        try {
+          await sequelize.transaction(async (tRevert) => {
+            await Booking.update({ payment_status: 'Paid', booking_status: 'Confirmed' }, { where: { id: booking_id }, transaction: tRevert });
+            await Transaction.update({ status: PAYMENT_STATUSES.SUCCESS }, { where: { id: claimResult.transactionId }, transaction: tRevert });
+          });
+        } catch (_) {}
+        throw new Error('GATEWAY_REFUND_FAILED: ' + (gwErr.response?.data?.error?.description || gwErr.message));
+      }
+    }
+
+    if (!refundId) {
+      refundId = `rfnd_sim_${crypto.randomBytes(10).toString('hex')}`;
+    }
+
+    // Phase 3: Finalize state in a short atomic DB transaction
+    await sequelize.transaction(async (tFinal) => {
+      await Transaction.update({
+        status: PAYMENT_STATUSES.REFUNDED,
+        refund_id: refundId,
+        refund_amount: claimResult.refundAmount
+      }, {
+        where: { id: claimResult.transactionId },
+        transaction: tFinal
+      });
+
+      await Booking.update({
+        payment_status: 'Refunded',
+        booking_status: 'Cancelled'
+      }, {
+        where: { id: booking_id },
+        transaction: tFinal
+      });
 
       await PaymentLog.create({
         user_id: req.user.id,
         event_type: isSimulated ? 'SIMULATED_REFUND_COMPLETED' : 'REFUND_COMPLETED',
-        payment_method: transaction.payment_method,
-        details: reason || `Refund processed for booking #${booking_id}: ₹${refundAmount} refunded, ₹${refundCalc.cancellationCharge} cancellation fee (${refundCalc.policyTier}) (Refund ID: ${refundId}${isSimulated ? ' - Simulated' : ''})`
-      }, { transaction: t });
-
-      return { transaction, refundId, isSimulated, refundAmount, cancellationCharge: refundCalc.cancellationCharge, policyTier: refundCalc.policyTier };
+        payment_method: claimResult.paymentMethod,
+        details: reason || `Refund processed for booking #${booking_id}: ₹${claimResult.refundAmount} refunded, ₹${claimResult.cancellationCharge} cancellation fee (${claimResult.policyTier}) (Refund ID: ${refundId}${isSimulated ? ' - Simulated' : ''})`
+      }, { transaction: tFinal });
     });
 
     return res.status(200).json({
-      message: refundResult.isSimulated
+      message: isSimulated
         ? 'Refund registered in simulation sandbox mode (no live gateway configured).'
         : 'Refund successfully verified and completed with payment gateway.',
       status: PAYMENT_STATUSES.REFUNDED,
-      refund_id: refundResult.refundId,
+      refund_id: refundId,
       booking_id,
-      refund_amount: refundResult.refundAmount,
-      cancellation_charge: refundResult.cancellationCharge,
-      policy_tier: refundResult.policyTier,
-      simulated: refundResult.isSimulated,
-      gateway_confirmed: !refundResult.isSimulated
+      refund_amount: claimResult.refundAmount,
+      cancellation_charge: claimResult.cancellationCharge,
+      policy_tier: claimResult.policyTier,
+      simulated: isSimulated,
+      gateway_confirmed: !isSimulated
     });
   } catch (error) {
     if (error.message === 'ALREADY_REFUNDED') {

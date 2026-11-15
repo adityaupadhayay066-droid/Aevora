@@ -555,24 +555,9 @@ function searchHotels(destination, options = {}) {
     }
   }
 
-  // If still no matches or missing variety, generate curated stays for this city
+  // If no verified matches exist in dataset, return empty without fabricating fake properties
   if (matched.length === 0) {
-    const primaryCity = candidates[0] || destination.trim().toLowerCase();
-    matched = generateFallbackStaysForCity(primaryCity);
-    matchedCity = primaryCity;
-  } else {
-    // If dataset matched but lacks hostels/dorms or homestays, supplement with city-themed options
-    const hasHostels = matched.some(h => h.isHostel);
-    const hasHomestay = matched.some(h => h.category?.toLowerCase().includes('homestay') || h.category?.toLowerCase().includes('villa'));
-    if (!hasHostels || !hasHomestay) {
-      const extraStays = generateFallbackStaysForCity(matchedCity || destination);
-      if (!hasHostels) {
-        matched.push(...extraStays.filter(s => s.isHostel));
-      }
-      if (!hasHomestay) {
-        matched.push(...extraStays.filter(s => s.category?.toLowerCase().includes('homestay') || s.category?.toLowerCase().includes('villa')));
-      }
-    }
+    return { hotels: [], matchedCity: null };
   }
 
   // Filter by category or isHostel if specified

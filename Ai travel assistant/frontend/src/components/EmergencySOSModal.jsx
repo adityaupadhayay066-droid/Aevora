@@ -171,20 +171,16 @@ export default function EmergencySOSModal({ isOpen, onClose }) {
     const lng = coords?.longitude || '77.2167';
 
     try {
-      if (user) {
-        const payload = {
-          latitude: lat,
-          longitude: lng,
-          emergency_type: emergencyType,
-          location_name: locationName || undefined,
-          note: customNote || undefined
-        };
-        const res = await api.post('/security/sos', payload);
-        const refId = res.data?.alertId || res.data?.id || Math.floor(100000 + Math.random() * 900000);
-        setAlertRef(`AEV-SOS-${refId}`);
-      } else {
-        setAlertRef(`AEV-GUEST-${Math.floor(100000 + Math.random() * 900000)}`);
-      }
+      const payload = {
+        latitude: lat,
+        longitude: lng,
+        emergency_type: emergencyType,
+        location_name: locationName || undefined,
+        note: customNote || undefined
+      };
+      const res = await api.post('/security/sos', payload);
+      const refId = res.data?.alertId || res.data?.alert?.id || Math.floor(100000 + Math.random() * 900000);
+      setAlertRef(user ? `AEV-SOS-${refId}` : `AEV-GUEST-${refId}`);
 
       setStep('active_hud');
       toast.error('🚨 EMERGENCY DISPATCH ACTIVE: Security responders alerted!', { duration: 6000 });

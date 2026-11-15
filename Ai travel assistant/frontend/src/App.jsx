@@ -67,6 +67,7 @@ const AdminManagementPage = lazy(() => import('./pages/admin/AdminManagementPage
 const AuditLogsPage = lazy(() => import('./pages/admin/AuditLogsPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const AdminApiKeysPage = lazy(() => import('./pages/admin/AdminApiKeysPage'));
+const SecurityAlertsPage = lazy(() => import('./pages/admin/SecurityAlertsPage'));
 
 
 function Loader() {
@@ -139,6 +140,12 @@ function AnimatedRoutes() {
         } />
         <Route path="/admin/reports" element={
           <AdminRoute><AdminLayout><PageWrapper><ReportsPage /></PageWrapper></AdminLayout></AdminRoute>
+        } />
+        <Route path="/admin/sos" element={
+          <AdminRoute><AdminLayout><PageWrapper><SecurityAlertsPage /></PageWrapper></AdminLayout></AdminRoute>
+        } />
+        <Route path="/admin/security-alerts" element={
+          <AdminRoute><AdminLayout><PageWrapper><SecurityAlertsPage /></PageWrapper></AdminLayout></AdminRoute>
         } />
         <Route path="/admin/analytics" element={
           <AdminRoute><AdminLayout><PageWrapper><AnalyticsPage /></PageWrapper></AdminLayout></AdminRoute>
