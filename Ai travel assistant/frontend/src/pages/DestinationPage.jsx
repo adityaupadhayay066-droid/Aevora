@@ -1169,6 +1169,10 @@ export default function DestinationPage() {
                       src={stay.image || stay.images?.[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'} 
                       alt={stay.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
+                      }}
                     />
                     <div className="absolute top-3 left-3 flex items-center gap-1.5">
                       <span className="bg-[#244C66]/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow">

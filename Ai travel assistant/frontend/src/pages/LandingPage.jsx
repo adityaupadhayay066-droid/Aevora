@@ -335,6 +335,10 @@ export default function LandingPage() {
             src="https://images.unsplash.com/photo-1506461883276-594a12b11cf3?auto=format&fit=crop&w=2000&q=80" 
             alt="Scenic rail corridor"
             className="w-full h-full object-cover object-center mix-blend-multiply"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=2000&q=80';
+            }}
           />
         </div>
 
@@ -1105,6 +1109,10 @@ export default function LandingPage() {
                     alt={spot.name}
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                     loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';
+                    }}
                   />
                   <div className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-2xs text-white text-[11px] font-medium">
                     {spot.duration}

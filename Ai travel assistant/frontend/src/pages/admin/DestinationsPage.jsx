@@ -142,6 +142,10 @@ export default function DestinationsPage() {
                     <img
                         src={row.image_url || 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=200'}
                         alt={row.name}
+                        onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=200';
+                        }}
                         className="w-10 h-10 rounded-xl object-cover border border-[var(--color-border)] shrink-0"
                     />
                     <div>
@@ -271,6 +275,10 @@ export default function DestinationsPage() {
                                 <img
                                     src={dest.image_url || 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=800'}
                                     alt={dest.name}
+                                    onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=800';
+                                    }}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />

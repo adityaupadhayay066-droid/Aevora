@@ -30,7 +30,15 @@ export default function RestaurantDetails() {
     return (
         <div className="bg-[#F7F8FA] dark:bg-[#121921] min-h-screen pb-12 font-sans text-[#263238] dark:text-[#F7F8FA]">
             <div className="h-64 bg-[#F0F4F7] dark:bg-[#233240] relative overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200" alt="Restaurant cover" className="w-full h-full object-cover opacity-90" />
+                <img 
+                    src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200" 
+                    alt="Restaurant cover" 
+                    className="w-full h-full object-cover opacity-90"
+                    onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200';
+                    }}
+                />
                 <div className="absolute inset-0 bg-[#244C66]/40 dark:bg-[#121921]/60" />
                 
                 <div className="absolute bottom-0 left-0 right-0 p-8 max-w-5xl mx-auto">
@@ -59,7 +67,15 @@ export default function RestaurantDetails() {
                     {menu.map(item => (
                         <div key={item.id} className="travel-card bg-[#FFFFFF] dark:bg-[#1B242E] border border-[#E3E7EA] dark:border-[#293644] rounded-xl p-4 flex gap-4 transition-all shadow-[0_4px_16px_rgba(23,63,58,0.06)] dark:shadow-none hover:shadow-md">
                             <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-[#F0F4F7] dark:bg-[#233240]">
-                                <img src={item.image_url} alt={item.food_name} className="w-full h-full object-cover" />
+                                <img 
+                                    src={item.image_url} 
+                                    alt={item.food_name} 
+                                    className="w-full h-full object-cover" 
+                                    onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400';
+                                    }}
+                                />
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
                                 <h3 className="text-[#263238] dark:text-[#F7F8FA] font-bold mb-1 flex items-center gap-2">

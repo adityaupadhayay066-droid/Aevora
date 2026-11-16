@@ -8,6 +8,7 @@ export default function UserAvatar({
     showBadge = false,
     role = 'user'
 }) {
+    const [imgFailed, setImgFailed] = React.useState(false);
     const initials = name
         ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
         : (email ? email.slice(0, 2).toUpperCase() : 'U');
@@ -28,10 +29,11 @@ export default function UserAvatar({
 
     return (
         <div className="relative inline-flex items-center justify-center shrink-0 select-none">
-            {image ? (
+            {image && !imgFailed ? (
                 <img
                     src={image}
                     alt={name || email}
+                    onError={() => setImgFailed(true)}
                     className={`${sizeClasses} rounded-full object-cover border border-[var(--color-border)] shadow-sm`}
                 />
             ) : (

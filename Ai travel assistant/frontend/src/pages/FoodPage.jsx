@@ -33,13 +33,13 @@ export default function FoodPage() {
             { id: 1, name: 'Dalma', category: 'Traditional', description: 'A nutritious lentil and vegetable stew, slow-cooked to perfection without onion or garlic.', price: '₹120', popularity: 98, image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400', isVeg: true, isJain: true },
             { id: 2, name: 'Pakhala Bhata', category: 'Local Specialty', description: 'Fermented rice with water, served with fried vegetables and fish. Perfect for summer.', price: '₹150', popularity: 95, image: 'https://images.unsplash.com/photo-1512152272829-e3139592d56f?w=400', isVeg: true },
             { id: 3, name: 'Chhena Poda', category: 'Desserts', description: 'Odisha\'s famous roasted cheese dessert, caramelized with sugar and cardamom.', price: '₹180/kg', popularity: 99, image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400', isVeg: true },
-            { id: 4, name: 'Dahi Bara Aloo Dum', category: 'Street Food', description: 'Spicy potato curry over curd-soaked lentil dumplings, topped with sev.', price: '₹50', popularity: 97, image: 'https://images.unsplash.com/photo-1626804475297-41609ea0058b?w=400', isVeg: true },
+            { id: 4, name: 'Dahi Bara Aloo Dum', category: 'Street Food', description: 'Spicy potato curry over curd-soaked lentil dumplings, topped with sev.', price: '₹50', popularity: 97, image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400', isVeg: true },
             { id: 5, name: 'Mutton Curry', category: 'Traditional', description: 'Odisha style slow-cooked mutton curry with tender potatoes.', price: '₹350', popularity: 94, image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400', isVeg: false, highProtein: true }
         ],
         'Delhi': [
             { id: 10, name: 'Chole Bhature', category: 'Street Food', description: 'Spicy chickpea curry served with fried bread. A classic Delhi breakfast.', price: '₹120', popularity: 99, image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?w=400', isVeg: true },
             { id: 11, name: 'Butter Chicken', category: 'Traditional', description: 'Tender chicken cooked in a rich, creamy tomato and butter sauce.', price: '₹350', popularity: 98, image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=400', isVeg: false, highProtein: true },
-            { id: 12, name: 'Aloo Tikki Chaat', category: 'Street Food', description: 'Crispy potato patties topped with sweet and spicy chutneys and yogurt.', price: '₹80', popularity: 96, image: 'https://images.unsplash.com/photo-1626804475297-41609ea0058b?w=400', isVeg: true }
+            { id: 12, name: 'Aloo Tikki Chaat', category: 'Street Food', description: 'Crispy potato patties topped with sweet and spicy chutneys and yogurt.', price: '₹80', popularity: 96, image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400', isVeg: true }
         ],
         'Mumbai': [
             { id: 20, name: 'Vada Pav', category: 'Street Food', description: 'Mumbai\'s iconic street food: a spicy potato dumpling in a soft bun.', price: '₹20', popularity: 99, image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400', isVeg: true },
@@ -47,11 +47,11 @@ export default function FoodPage() {
         ],
         'Kolkata': [
             { id: 30, name: 'Rosogolla', category: 'Desserts', description: 'Spongy cottage cheese balls soaked in light sugar syrup.', price: '₹150/kg', popularity: 99, image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400', isVeg: true },
-            { id: 31, name: 'Kathi Roll', category: 'Street Food', description: 'Skewer-roasted kebab wrapped in a paratha bread.', price: '₹80', popularity: 96, image: 'https://images.unsplash.com/photo-1626804475297-41609ea0058b?w=400', isVeg: false, highProtein: true }
+            { id: 31, name: 'Kathi Roll', category: 'Street Food', description: 'Skewer-roasted kebab wrapped in a paratha bread.', price: '₹80', popularity: 96, image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=400', isVeg: false, highProtein: true }
         ],
         'Chennai': [
-            { id: 40, name: 'Idli Sambar', category: 'South Indian', description: 'Steamed rice cakes served with lentil stew and coconut chutney.', price: '₹60', popularity: 98, image: 'https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?w=400', isVeg: true },
-            { id: 41, name: 'Masala Dosa', category: 'South Indian', description: 'Thin, crispy crepe made from rice and lentils, filled with potato masala.', price: '₹80', popularity: 99, image: 'https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?w=400', isVeg: true }
+            { id: 40, name: 'Idli Sambar', category: 'South Indian', description: 'Steamed rice cakes served with lentil stew and coconut chutney.', price: '₹60', popularity: 98, image: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=400', isVeg: true },
+            { id: 41, name: 'Masala Dosa', category: 'South Indian', description: 'Thin, crispy crepe made from rice and lentils, filled with potato masala.', price: '₹80', popularity: 99, image: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=400', isVeg: true }
         ],
         'Hyderabad': [
              { id: 50, name: 'Hyderabadi Biryani', category: 'Traditional', description: 'Rich, aromatic rice dish cooked with marinated meat and spices.', price: '₹250', popularity: 99, image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400', isVeg: false, highProtein: true }
@@ -302,7 +302,15 @@ export default function FoodPage() {
                                         className="bg-[#FFFFFF] dark:bg-[#1B242E] border border-[#E3E7EA] dark:border-[#293644] rounded-xl overflow-hidden hover:shadow-[0_4px_16px_rgba(23,63,58,0.06)] transition-all flex flex-col group"
                                     >
                                         <div className="h-48 relative overflow-hidden bg-[#F7F8FA] dark:bg-[#121921]">
-                                            <img src={cuisine.image} alt={cuisine.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <img 
+                                                src={cuisine.image} 
+                                                alt={cuisine.name} 
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                                onError={(e) => {
+                                                    e.currentTarget.onerror = null;
+                                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400';
+                                                }}
+                                            />
                                             
                                             <div className="absolute top-3 left-3 flex gap-2">
                                                 {cuisine.isVeg && <span className="bg-[#FFFFFF] dark:bg-[#1B242E] text-[#244C66] dark:text-[#F0F4F7] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-[#E3E7EA] dark:border-[#293644]">Veg</span>}
@@ -363,7 +371,15 @@ export default function FoodPage() {
                                         >
                                             {/* Image */}
                                             <div className="h-36 relative overflow-hidden bg-[#F7F8FA] dark:bg-[#121921] border-b border-[#E3E7EA] dark:border-[#293644]">
-                                                <img src={food.image_url} alt={food.food_name} className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" />
+                                                <img 
+                                                    src={food.image_url} 
+                                                    alt={food.food_name} 
+                                                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" 
+                                                    onError={(e) => {
+                                                        e.currentTarget.onerror = null;
+                                                        e.currentTarget.src = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400';
+                                                    }}
+                                                />
                                             </div>
 
                                             {/* Content */}
