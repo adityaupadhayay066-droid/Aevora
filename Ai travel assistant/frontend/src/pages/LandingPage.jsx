@@ -97,9 +97,9 @@ const TRAVEL_PICKS = {
     title: 'Weekend Escapes',
     description: 'Quick getaways under 6 hours from major Indian metros.',
     destinations: [
-      { name: 'Rishikesh', state: 'Uttarakhand', duration: '2-3 Days', estBudget: '₹4,500 – ₹8,000', highlight: 'Ganga rafting & riverside stays', image: 'https://images.unsplash.com/photo-1600100397608-f010f4439fa3?auto=format&fit=crop&w=600&q=80' },
+      { name: 'Rishikesh', state: 'Uttarakhand', duration: '2-3 Days', estBudget: '₹4,500 – ₹8,000', highlight: 'Ganga rafting & riverside stays', image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80' },
       { name: 'Pondicherry', state: 'Tamil Nadu Coast', duration: '2-3 Days', estBudget: '₹5,000 – ₹9,500', highlight: 'French quarter cafes & Promenade', image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Mahabaleshwar', state: 'Maharashtra', duration: '2 Days', estBudget: '₹4,000 – ₹7,500', highlight: 'Strawberry valleys & viewpoints', image: 'https://images.unsplash.com/photo-1609137144822-094119d65751?auto=format&fit=crop&w=600&q=80' }
+      { name: 'Mahabaleshwar', state: 'Maharashtra', duration: '2 Days', estBudget: '₹4,000 – ₹7,500', highlight: 'Strawberry valleys & viewpoints', image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80' }
     ]
   },
   'mountain': {
@@ -125,7 +125,7 @@ const TRAVEL_PICKS = {
     description: 'Centuries-old stone fortresses, sacred temples, and living traditions.',
     destinations: [
       { name: 'Jaipur', state: 'Rajasthan', duration: '3-4 Days', estBudget: '₹6,000 – ₹12,000', highlight: 'Amer Fort & royal heritage stay', image: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Hampi', state: 'Karnataka', duration: '3 Days', estBudget: '₹4,500 – ₹8,500', highlight: 'Vijayanagara boulder ruins & temples', image: 'https://images.unsplash.com/photo-1600100397608-f010f4439fa3?auto=format&fit=crop&w=600&q=80' },
+      { name: 'Hampi', state: 'Karnataka', duration: '3 Days', estBudget: '₹4,500 – ₹8,500', highlight: 'Vijayanagara boulder ruins & temples', image: 'https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?auto=format&fit=crop&w=600&q=80' },
       { name: 'Varanasi', state: 'Uttar Pradesh', duration: '2-3 Days', estBudget: '₹4,000 – ₹8,000', highlight: 'Ancient ghats & evening aarti', image: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=600&q=80' }
     ]
   },
@@ -133,7 +133,7 @@ const TRAVEL_PICKS = {
     title: 'Budget Trips',
     description: 'High-value adventures with affordable rail connectivity and backpacker hostels.',
     destinations: [
-      { name: 'Pushkar', state: 'Rajasthan', duration: '2-3 Days', estBudget: '₹3,500 – ₹6,000', highlight: 'Desert sunset & sacred lake ghats', image: 'https://images.unsplash.com/photo-1609137144822-094119d65751?auto=format&fit=crop&w=600&q=80' },
+      { name: 'Pushkar', state: 'Rajasthan', duration: '2-3 Days', estBudget: '₹3,500 – ₹6,000', highlight: 'Desert sunset & sacred lake ghats', image: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=600&q=80' },
       { name: 'Dharamshala & McLeodganj', state: 'Himachal Pradesh', duration: '3-4 Days', estBudget: '₹4,500 – ₹8,000', highlight: 'Tibetan culture & Triund trek', image: 'https://images.unsplash.com/photo-1588714477688-cf28a50e94f7?auto=format&fit=crop&w=600&q=80' },
       { name: 'Puri', state: 'Odisha', duration: '2-3 Days', estBudget: '₹3,800 – ₹6,500', highlight: 'Jagannath temple & coastal breeze', image: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=600&q=80' }
     ]
@@ -144,7 +144,7 @@ const TRAVEL_PICKS = {
     destinations: [
       { name: 'Bir Billing', state: 'Himachal Pradesh', duration: '3 Days', estBudget: '₹6,000 – ₹11,000', highlight: 'World-renowned paragliding site', image: 'https://images.unsplash.com/photo-1588714477688-cf28a50e94f7?auto=format&fit=crop&w=600&q=80' },
       { name: 'Meghalaya', state: 'Northeast India', duration: '4-5 Days', estBudget: '₹8,500 – ₹15,000', highlight: 'Double-decker root bridge trek', image: 'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Rishikesh', state: 'Uttarakhand', duration: '3 Days', estBudget: '₹5,500 – ₹9,500', highlight: 'Grade IV white water rafting', image: 'https://images.unsplash.com/photo-1600100397608-f010f4439fa3?auto=format&fit=crop&w=600&q=80' }
+      { name: 'Rishikesh', state: 'Uttarakhand', duration: '3 Days', estBudget: '₹5,500 – ₹9,500', highlight: 'Grade IV white water rafting', image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80' }
     ]
   }
 };
@@ -864,6 +864,10 @@ export default function LandingPage() {
                     alt={`${dest.name}, ${dest.state}`}
                     className="w-full h-full object-cover object-center group-hover:scale-102 transition-transform duration-300"
                     loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
                   

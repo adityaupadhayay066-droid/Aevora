@@ -438,6 +438,10 @@ export default function DestinationPage() {
           src={dest.heroImage} 
           alt={dest.name} 
           className="w-full h-full object-cover opacity-85 transition-transform duration-700 hover:scale-105"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&q=80';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#121921] via-[#244C66]/65 to-black/40" />
         
