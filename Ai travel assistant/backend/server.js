@@ -112,6 +112,13 @@ const allowedOrigins = [
   'http://127.0.0.1:3000'
 ];
 
+if (process.env.FRONTEND_URL) {
+  const feUrl = process.env.FRONTEND_URL.trim();
+  if (feUrl && !allowedOrigins.includes(feUrl)) {
+    allowedOrigins.push(feUrl);
+  }
+}
+
 if (process.env.ALLOWED_ORIGINS) {
   process.env.ALLOWED_ORIGINS.split(',').forEach(o => {
     const trimmed = o.trim();
@@ -128,7 +135,10 @@ app.use(cors({
 
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed === '*' || allowed === origin) return true;
-      if (origin.endsWith('.netlify.app') || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app')) return true;
+      if (origin.endsWith('.netlify.app') || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app')) {
+        const lowerOrigin = origin.toLowerCase();
+        if (lowerOrigin.includes('aevora') || lowerOrigin.includes('traveliq')) return true;
+      }
       if (process.env.NODE_ENV !== 'production') {
         if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return true;
         if (origin.includes('.devtunnels.ms')) return true;

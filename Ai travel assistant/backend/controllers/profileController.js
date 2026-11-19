@@ -266,10 +266,9 @@ const deleteAccount = async (req, res) => {
     await Booking.destroy({ where: { user_id: req.user.id } });
     await Analytics.destroy({ where: { user_id: req.user.id } });
 
-    // Delete avatar file
+    // Delete avatar file safely using path traversal protection
     if (user.profile_image) {
-      const filePath = path.join(__dirname, '..', user.profile_image);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      safelyDeleteAvatarFile(user.profile_image);
     }
 
     await user.destroy();

@@ -49,6 +49,9 @@ exports.triggerSOS = async (req, res) => {
 
 exports.getAlerts = async (req, res) => {
     try {
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Forbidden: Administrator privileges required to access emergency alerts.' });
+        }
         const alerts = await SosAlert.findAll({
             order: [['timestamp', 'DESC']],
             limit: 100

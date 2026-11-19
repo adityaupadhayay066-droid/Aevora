@@ -149,12 +149,16 @@ const deleteDocument = async (req, res) => {
             return res.status(404).json({ message: 'Document not found.' });
         }
 
-        // Delete physical file if exists
-        if (doc.file_path && fs.existsSync(doc.file_path)) {
-            try {
-                fs.unlinkSync(doc.file_path);
-            } catch (err) {
-                console.error('Error deleting physical file:', err);
+        // Delete physical file safely if exists within authorized uploads directory
+        if (doc.file_path && typeof doc.file_path === 'string') {
+            const allowedUploadsDir = path.resolve(__dirname, '..', 'uploads');
+            const resolvedPath = path.resolve(doc.file_path);
+            if (resolvedPath.startsWith(allowedUploadsDir) && fs.existsSync(resolvedPath)) {
+                try {
+                    fs.unlinkSync(resolvedPath);
+                } catch (err) {
+                    console.error('Error deleting physical file:', err);
+                }
             }
         }
 

@@ -382,6 +382,8 @@ const searchStations = async (req, res) => {
         } else {
             const queryUpper = rawQuery.toUpperCase();
             const queryLower = rawQuery.toLowerCase();
+            const escapedExact = sequelize.escape(queryUpper);
+            const escapedPrefix = sequelize.escape(queryUpper + '%');
             stations = await Station.findAll({
                 where: {
                     [Op.or]: [
@@ -395,7 +397,7 @@ const searchStations = async (req, res) => {
                     ]
                 },
                 order: [
-                    [sequelize.literal(`CASE WHEN UPPER(station_code) = '${queryUpper.replace(/'/g, "''")}' THEN 0 WHEN UPPER(station_code) LIKE '${queryUpper.replace(/'/g, "''")}%' THEN 1 WHEN UPPER(station_name) LIKE '${queryUpper.replace(/'/g, "''")}%' THEN 2 ELSE 3 END`), 'ASC'],
+                    [sequelize.literal(`CASE WHEN UPPER(station_code) = ${escapedExact} THEN 0 WHEN UPPER(station_code) LIKE ${escapedPrefix} THEN 1 WHEN UPPER(station_name) LIKE ${escapedPrefix} THEN 2 ELSE 3 END`), 'ASC'],
                     ['station_name', 'ASC']
                 ],
                 limit: 20
