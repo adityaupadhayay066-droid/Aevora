@@ -63,10 +63,40 @@ const optimizeRoute = async (routeData) => {
     return response.data;
 };
 
-const predictDelay = async (delayData) => {
+const DAY_NAME_MAP = {
+    'monday': 1, 'mon': 1,
+    'tuesday': 2, 'tue': 2,
+    'wednesday': 3, 'wed': 3,
+    'thursday': 4, 'thu': 4,
+    'friday': 5, 'fri': 5,
+    'saturday': 6, 'sat': 6,
+    'sunday': 7, 'sun': 7
+};
+
+function normalizeDayOfWeek(dow) {
+    if (typeof dow === 'number' && !isNaN(dow)) return Math.max(1, Math.min(7, Math.round(dow)));
+    if (typeof dow === 'string') {
+        const cleaned = dow.trim().toLowerCase();
+        if (DAY_NAME_MAP[cleaned]) return DAY_NAME_MAP[cleaned];
+        const num = parseInt(cleaned, 10);
+        if (!isNaN(num)) return Math.max(1, Math.min(7, num));
+    }
+    return 1;
+}
+
+const predictDelay = async (delayData = {}) => {
+    const payload = {
+        train_number: String(delayData.train_number || delayData.trainNumber || delayData.train_no || '12000'),
+        route: String(delayData.route || delayData.station_code || 'ALL'),
+        day_of_week: normalizeDayOfWeek(delayData.day_of_week),
+        month: typeof delayData.month === 'number' ? delayData.month : 1,
+        season: typeof delayData.season === 'number' ? delayData.season : 1,
+        weather: String(delayData.weather || 'Clear')
+    };
+
     if (shouldAttemptAiCall()) {
         try {
-            const response = await aiClient.post('/predict-delay', delayData);
+            const response = await aiClient.post('/predict-delay', payload);
             recordAiCallSuccess();
             return response.data;
         } catch (err) {
@@ -74,7 +104,7 @@ const predictDelay = async (delayData) => {
             console.warn(`[aiService.predictDelay] AI microservice call failed (${err.message}). Using telemetry heuristic fallback.`);
         }
     }
-    const trainNumInt = parseInt(delayData.train_number) || 12000;
+    const trainNumInt = parseInt(payload.train_number) || 12000;
     const isRajdhaniOrShatabdi = [12001, 12002, 12004, 12301, 12302, 12423, 12424].includes(trainNumInt);
     const isSuperfast = trainNumInt >= 12000 && trainNumInt < 13000;
     
@@ -91,10 +121,20 @@ const predictDelay = async (delayData) => {
     };
 };
 
-const predictFare = async (fareData) => {
+const predictFare = async (fareData = {}) => {
+    const payload = {
+        source: String(fareData.source || fareData.source_code || fareData.from || 'NDLS').toUpperCase(),
+        destination: String(fareData.destination || fareData.destination_code || fareData.dest || fareData.to || 'CNB').toUpperCase(),
+        class_code: String(fareData.class_code || fareData.class_type || fareData.class || 'SL').toUpperCase(),
+        month: typeof fareData.month === 'number' ? fareData.month : 1,
+        season_code: typeof fareData.season_code === 'number' ? fareData.season_code : 2,
+        demand_score: typeof fareData.demand_score === 'number' ? fareData.demand_score : 0.65,
+        current_fare: parseFloat(fareData.current_fare) || 1200.0
+    };
+
     if (shouldAttemptAiCall()) {
         try {
-            const response = await aiClient.post('/predict-fare', fareData);
+            const response = await aiClient.post('/predict-fare', payload);
             recordAiCallSuccess();
             return response.data;
         } catch (err) {
@@ -102,7 +142,7 @@ const predictFare = async (fareData) => {
             console.warn(`[aiService.predictFare] AI microservice call failed (${err.message}). Using telemetry heuristic fallback.`);
         }
     }
-    const currentFare = parseFloat(fareData.current_fare) || 1200.0;
+    const currentFare = payload.current_fare;
     const forecasted = Math.round(currentFare * 1.08);
     return {
         current_fare: currentFare,
@@ -113,10 +153,16 @@ const predictFare = async (fareData) => {
     };
 };
 
-const predictCrowd = async (crowdData) => {
+const predictCrowd = async (crowdData = {}) => {
+    const payload = {
+        station_code: String(crowdData.station_code || crowdData.station || 'NDLS').toUpperCase(),
+        day_of_week: normalizeDayOfWeek(crowdData.day_of_week),
+        hour_of_day: typeof crowdData.hour_of_day === 'number' ? crowdData.hour_of_day : (parseInt(crowdData.hour_of_day, 10) || 12)
+    };
+
     if (shouldAttemptAiCall()) {
         try {
-            const response = await aiClient.post('/predict-crowd', crowdData);
+            const response = await aiClient.post('/predict-crowd', payload);
             recordAiCallSuccess();
             return response.data;
         } catch (err) {
@@ -124,7 +170,7 @@ const predictCrowd = async (crowdData) => {
             console.warn(`[aiService.predictCrowd] AI microservice call failed (${err.message}). Using telemetry heuristic fallback.`);
         }
     }
-    const hour = parseInt(crowdData.hour_of_day) || 12;
+    const hour = payload.hour_of_day;
     const isPeak = (hour >= 8 && hour <= 10) || (hour >= 17 && hour <= 19);
     return {
         crowd_level: isPeak ? "High" : "Moderate",
@@ -135,10 +181,18 @@ const predictCrowd = async (crowdData) => {
     };
 };
 
-const predictOccupancy = async (occupancyData) => {
+const predictOccupancy = async (occupancyData = {}) => {
+    const payload = {
+        train_number: String(occupancyData.train_number || occupancyData.trainNumber || '12000'),
+        class_code: String(occupancyData.class_code || occupancyData.class_type || 'SL').toUpperCase(),
+        month: typeof occupancyData.month === 'number' ? occupancyData.month : 1,
+        day_of_week: normalizeDayOfWeek(occupancyData.day_of_week),
+        season_code: typeof occupancyData.season_code === 'number' ? occupancyData.season_code : 2
+    };
+
     if (shouldAttemptAiCall()) {
         try {
-            const response = await aiClient.post('/predict-occupancy', occupancyData);
+            const response = await aiClient.post('/predict-occupancy', payload);
             recordAiCallSuccess();
             return response.data;
         } catch (err) {

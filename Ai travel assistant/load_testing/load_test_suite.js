@@ -138,7 +138,7 @@ async function runUserJourney(vuId, sharedSession) {
   }, JSON.stringify({
     train_number: '12801',
     station_code: chosenRoute.src,
-    day_of_week: 'Friday'
+    day_of_week: 5
   }));
   journeyResults.push(delayRes);
 

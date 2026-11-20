@@ -191,7 +191,31 @@ def load_all_models():
 # Trigger initial load
 load_all_models()
 
-# ─── Pydantic Request Models ───
+# ─── Pydantic Request Models & Robust Validators ───
+from typing import Any
+from pydantic import model_validator
+
+DAY_NAME_MAP = {
+    "monday": 1, "mon": 1,
+    "tuesday": 2, "tue": 2, "tues": 2,
+    "wednesday": 3, "wed": 3,
+    "thursday": 4, "thu": 4, "thur": 4, "thurs": 4,
+    "friday": 5, "fri": 5,
+    "saturday": 6, "sat": 6,
+    "sunday": 7, "sun": 7,
+}
+
+def _parse_day_of_week(val: Any) -> int:
+    if isinstance(val, int):
+        return max(1, min(7, val))
+    if isinstance(val, str):
+        cleaned = val.strip().lower()
+        if cleaned in DAY_NAME_MAP:
+            return DAY_NAME_MAP[cleaned]
+        if cleaned.isdigit():
+            return max(1, min(7, int(cleaned)))
+    return 1
+
 class DelayRequest(BaseModel):
     train_number: str
     route: str = "ALL"
@@ -199,6 +223,33 @@ class DelayRequest(BaseModel):
     month: int = 1
     season: int = 1
     weather: str = "Clear"
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # Normalize train_number (handle int, camelCase, train_no)
+            tn = data.get("train_number") or data.get("trainNumber") or data.get("train_no") or "12000"
+            data["train_number"] = str(tn)
+            # Normalize route / station_code
+            if not data.get("route") and data.get("station_code"):
+                data["route"] = str(data["station_code"])
+            # Normalize day_of_week (handle "Friday", "fri", ints)
+            data["day_of_week"] = _parse_day_of_week(data.get("day_of_week"))
+            # Normalize month, season, weather
+            if "month" in data:
+                try:
+                    data["month"] = int(data["month"])
+                except (ValueError, TypeError):
+                    data["month"] = 1
+            if "season" in data:
+                try:
+                    data["season"] = int(data["season"])
+                except (ValueError, TypeError):
+                    data["season"] = 1
+            if "weather" in data and not data["weather"]:
+                data["weather"] = "Clear"
+        return data
 
 class FareForecastRequest(BaseModel):
     source: str
@@ -209,10 +260,58 @@ class FareForecastRequest(BaseModel):
     demand_score: float = 0.65
     current_fare: float = 1200.0
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            src = data.get("source") or data.get("source_code") or data.get("from") or "NDLS"
+            data["source"] = str(src).upper()
+            dst = data.get("destination") or data.get("destination_code") or data.get("dest") or data.get("to") or "CNB"
+            data["destination"] = str(dst).upper()
+            cls_code = data.get("class_code") or data.get("class_type") or data.get("class") or "SL"
+            data["class_code"] = str(cls_code).upper()
+            if "current_fare" in data:
+                try:
+                    data["current_fare"] = float(data["current_fare"])
+                except (ValueError, TypeError):
+                    data["current_fare"] = 1200.0
+            else:
+                data["current_fare"] = 1200.0
+            if "month" in data:
+                try:
+                    data["month"] = int(data["month"])
+                except (ValueError, TypeError):
+                    data["month"] = 1
+            if "season_code" in data:
+                try:
+                    data["season_code"] = int(data["season_code"])
+                except (ValueError, TypeError):
+                    data["season_code"] = 2
+            if "demand_score" in data:
+                try:
+                    data["demand_score"] = float(data["demand_score"])
+                except (ValueError, TypeError):
+                    data["demand_score"] = 0.65
+        return data
+
 class CrowdRequest(BaseModel):
     station_code: str
     day_of_week: int = 1
     hour_of_day: int = 12
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            st = data.get("station_code") or data.get("station") or "NDLS"
+            data["station_code"] = str(st).upper()
+            data["day_of_week"] = _parse_day_of_week(data.get("day_of_week"))
+            if "hour_of_day" in data:
+                try:
+                    data["hour_of_day"] = int(data["hour_of_day"])
+                except (ValueError, TypeError):
+                    data["hour_of_day"] = 12
+        return data
 
 class OccupancyRequest(BaseModel):
     train_number: str
@@ -220,6 +319,27 @@ class OccupancyRequest(BaseModel):
     month: int = 1
     day_of_week: int = 1
     season_code: int = 2
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            tn = data.get("train_number") or data.get("trainNumber") or "12000"
+            data["train_number"] = str(tn)
+            cls_code = data.get("class_code") or data.get("class_type") or "SL"
+            data["class_code"] = str(cls_code).upper()
+            data["day_of_week"] = _parse_day_of_week(data.get("day_of_week"))
+            if "month" in data:
+                try:
+                    data["month"] = int(data["month"])
+                except (ValueError, TypeError):
+                    data["month"] = 1
+            if "season_code" in data:
+                try:
+                    data["season_code"] = int(data["season_code"])
+                except (ValueError, TypeError):
+                    data["season_code"] = 2
+        return data
 
 class RouteRecommendRequest(BaseModel):
     user_id: int

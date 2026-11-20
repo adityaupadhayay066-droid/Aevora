@@ -96,7 +96,7 @@ class TravelIQCustomer(HttpUser):
         payload = {
             "train_number": "12301",
             "station_code": "NDLS",
-            "day_of_week": "Friday"
+            "day_of_week": 5
         }
         with self.client.post("/api/ai/predict-delay", json=payload, headers=self.auth_headers(), catch_response=True) as resp:
             if resp.status_code == 200:
