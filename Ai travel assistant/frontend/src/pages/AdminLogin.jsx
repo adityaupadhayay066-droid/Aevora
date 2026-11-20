@@ -85,7 +85,9 @@ export default function AdminLogin() {
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#66736F] dark:text-[#A3B0AB] w-5 h-5" />
                   <input
                     id="admin-email"
+                    name="email"
                     type="email"
+                    autoComplete="username"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -98,7 +100,9 @@ export default function AdminLogin() {
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#66736F] dark:text-[#A3B0AB] w-5 h-5" />
                   <input
                     id="admin-password"
+                    name="password"
                     type="password"
+                    autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

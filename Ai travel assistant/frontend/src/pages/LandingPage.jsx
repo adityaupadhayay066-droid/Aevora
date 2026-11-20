@@ -14,6 +14,7 @@ import PassengerSelector from '../components/PassengerSelector';
 import { resolveCityAndState, parseGuestsCount } from '../utils/cityStateResolver';
 import Logo from '../components/brand/Logo';
 import { BRAND } from '../config/branding';
+import { handleImageFallback } from '../utils/imageFallback';
 
 // Featured 8 Popular Destinations across India
 const POPULAR_DESTINATIONS = [
@@ -865,13 +866,10 @@ export default function LandingPage() {
                 <div className={`relative overflow-hidden ${isFeatured ? 'h-64 sm:h-72' : 'h-52'}`}>
                   <img 
                     src={dest.image} 
-                    alt={`${dest.name}, ${dest.state}`}
+                    alt=""
                     className="w-full h-full object-cover object-center group-hover:scale-102 transition-transform duration-300"
                     loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';
-                    }}
+                    onError={(e) => handleImageFallback(e, dest.name, dest.state, 'DESTINATION')}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
                   
@@ -1106,13 +1104,10 @@ export default function LandingPage() {
                 <div className="h-44 overflow-hidden relative">
                   <img 
                     src={spot.image} 
-                    alt={spot.name}
+                    alt=""
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                     loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';
-                    }}
+                    onError={(e) => handleImageFallback(e, spot.name, spot.state, 'DESTINATION')}
                   />
                   <div className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-2xs text-white text-[11px] font-medium">
                     {spot.duration}

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DESTINATIONS_CATALOG, DESTINATION_MAP } from '../data/destinationsData';
+import { handleImageFallback } from '../utils/imageFallback';
 import { api } from '../utils/api';
 import HotelBookingModal from '../components/HotelBookingModal';
 import BookingModal from '../components/BookingModal';
@@ -436,12 +437,9 @@ export default function DestinationPage() {
       <div className="relative h-88 sm:h-[440px] w-full bg-[#244C66] overflow-hidden">
         <img 
           src={dest.heroImage} 
-          alt={dest.name} 
+          alt="" 
           className="w-full h-full object-cover opacity-85 transition-transform duration-700 hover:scale-105"
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&q=80';
-          }}
+          onError={(e) => handleImageFallback(e, dest.name, dest.state, dest.region)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#121921] via-[#244C66]/65 to-black/40" />
         

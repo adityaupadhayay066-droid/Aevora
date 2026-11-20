@@ -126,11 +126,15 @@ export default function Dashboard() {
   };
 
   const handleSearch = async () => {
+    const srcParam = getStationCode(source) || getStationName(source);
+    const dstParam = getStationCode(dest) || getStationName(dest);
+
+    if (!srcParam || !dstParam) {
+      return;
+    }
+
     setLoading(true);
     try {
-      const srcParam = getStationCode(source) || getStationName(source);
-      const dstParam = getStationCode(dest) || getStationName(dest);
-
       const response = await api.post('/travel/routes/search', {
         source: srcParam,
         destination: dstParam,

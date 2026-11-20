@@ -7,6 +7,7 @@ import {
   TrendingUp, Award, Flame, Sun, Heart
 } from 'lucide-react';
 import { DESTINATIONS_CATALOG } from '../data/destinationsData';
+import { handleImageFallback } from '../utils/imageFallback';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = [
@@ -287,13 +288,10 @@ export default function DestinationsDirectoryPage() {
                   <div className="relative h-52 w-full overflow-hidden bg-[#244C66]">
                     <img
                       src={dest.heroImage}
-                      alt={dest.name}
+                      alt=""
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                       loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&q=80';
-                      }}
+                      onError={(e) => handleImageFallback(e, dest.name, dest.state, dest.region)}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
