@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  # ═══════════════════════════════════════════════════════════════
+  # 1. Reverse Proxy & Layer 7 Load Balancer (Nginx)
+  # ══════════════════════════════════════════════════════════════
+  load-balancer:
+    image: nginx:alpine
+    container_name: aevora-load-balancer
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx_load_balancer.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend-1
+      - backend-2
+      - backend-3
+    restart: always
+
+  # ═══════════════════════════════════════════════════════════════
+  # 2. Clustered Backend API Instances (3 Replicas)
+  # ═══════════════════════════════════════════════════════════════
+  backend-1:
+    build:
+      context: ../backend
+    container_name: aevora-backend-1
+    environment:
+      - PORT=5000
+      - INSTANCE_ID=backend-node-1
+      - DB_HOST=mysql
+      - DB_USER=${DB_USER:-traveliq_app}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-traveliq}
+      - JWT_SECRET=${JWT_SECRET}
+      - AI_SERVICE_URL=http://ai-service-1:8000
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  backend-2:
+    build:
+      context: ../backend
+    container_name: aevora-backend-2
+    environment:
+      - PORT=5000
+      - INSTANCE_ID=backend-node-2
+      - SKIP_SEEDERS=true
+      - DB_HOST=mysql
+      - DB_USER=${DB_USER:-traveliq_app}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-traveliq}
+      - JWT_SECRET=${JWT_SECRET}
+      - AI_SERVICE_URL=http://ai-service-2:8000
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  backend-3:
+    build:
+      context: ../backend
+    container_name: aevora-backend-3
+    environment:
+      - PORT=5000
+      - INSTANCE_ID=backend-node-3
+      - SKIP_SEEDERS=true
+      - DB_HOST=mysql
+      - DB_USER=${DB_USER:-traveliq_app}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-traveliq}
+      - JWT_SECRET=${JWT_SECRET}
+      - AI_SERVICE_URL=http://ai-service-1:8000
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  # ═══════════════════════════════════════════════════════════════
+  # 3. Scaled FastAPI AI & ML Microservices (2 Replicas)
+  # ═══════════════════════════════════════════════════════════════
+  ai-service-1:
+    build:
+      context: ../ai-services
+    container_name: aevora-ai-1
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=${DB_USER:-traveliq_app}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-traveliq}
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  ai-service-2:
+    build:
+      context: ../ai-services
+    container_name: aevora-ai-2
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=${DB_USER:-traveliq_app}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-traveliq}
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  # ═══════════════════════════════════════════════════════════════
+  # 4. MySQL 8.0 Primary Relational Database
+  # ═══════════════════════════════════════════════════════════════
+  mysql:
+    image: mysql:8.0
+    container_name: aevora-mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --max_connections=500
+      --innodb_buffer_pool_size=512M
+      --innodb_log_file_size=128M
+      --table_open_cache=4000
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME:-traveliq}
+      - MYSQL_USER=${DB_USER:-traveliq_app}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mysql_clustered_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_clustered_data:

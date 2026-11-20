@@ -65,6 +65,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const app = express();
+const INSTANCE_ID = process.env.INSTANCE_ID || `instance-${process.pid}`;
 
 // ─── Trust proxy for accurate IP detection (disabled by default to prevent header spoofing) ───
 const trustProxyConfig = process.env.TRUST_PROXY === 'true' 
@@ -101,6 +102,7 @@ app.use(helmet({
 }));
 
 app.use((req, res, next) => {
+  res.setHeader('X-Served-By', INSTANCE_ID);
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 });
@@ -312,21 +314,25 @@ sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
       console.warn('[DB Init] train_stops view notice:', vErr.message);
     }
     
-    // Run seeders after sync
-    try {
-      console.log('⏳ Running seeders...');
-      await seedAdmin();
-      await seedTransports();
-      await seedStations();
-      await seedTrains();
-      await seedFares();
-      await seedFoodRecommendations();
-      await seedChatbotKnowledge();
-      await loadHotelData();
-      await seedAdminPanelData();
-      console.log('✅ Seeders completed.');
-    } catch (seedErr) {
-      console.error('⚠️  Seeder warning (non-fatal):', seedErr.message);
+    // Run seeders after sync (can be skipped for scaled secondary instances)
+    if (process.env.SKIP_SEEDERS !== 'true') {
+      try {
+        console.log('⏳ Running seeders...');
+        await seedAdmin();
+        await seedTransports();
+        await seedStations();
+        await seedTrains();
+        await seedFares();
+        await seedFoodRecommendations();
+        await seedChatbotKnowledge();
+        await loadHotelData();
+        await seedAdminPanelData();
+        console.log('✅ Seeders completed.');
+      } catch (seedErr) {
+        console.error('⚠️  Seeder warning (non-fatal):', seedErr.message);
+      }
+    } else {
+      console.log('⏩ SKIP_SEEDERS=true: Skipping seeder execution on secondary instance.');
     }
     
     // ─── Scheduled Background Worker: Pending Booking Expiration (P1 requirement) ───
