@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
+const { logger, httpLogger } = require('./config/logger');
 const { sequelize } = require('./models');
 const { seedTransports } = require('./seeders/transportSeeder');
 const { seedStations } = require('./seeders/stationSeeder');
@@ -74,6 +75,8 @@ const trustProxyConfig = process.env.TRUST_PROXY === 'true'
 app.set('trust proxy', trustProxyConfig);
 
 // ─── Security Headers ───
+const cspReportOnly = process.env.CSP_REPORT_ONLY === 'true';
+
 app.use(helmet({
   crossOriginResourcePolicy: false,
   hsts: {
@@ -87,16 +90,56 @@ app.use(helmet({
     policy: 'strict-origin-when-cross-origin'
   },
   contentSecurityPolicy: {
+    reportOnly: cspReportOnly,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://challenges.cloudflare.com", "https://checkout.razorpay.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "https://maps.gstatic.com", "https://maps.googleapis.com", "blob:"],
-      connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "ws://localhost:5173", "https://api.razorpay.com", "https://lumberjack.razorpay.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
       objectSrc: ["'none'"],
-      frameSrc: ["'self'", "https://challenges.cloudflare.com", "https://api.razorpay.com", "https://checkout.razorpay.com"],
-      upgradeInsecureRequests: [],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://challenges.cloudflare.com",
+        "https://checkout.razorpay.com"
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com",
+        "https://unpkg.com"
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://maps.gstatic.com",
+        "https://maps.googleapis.com",
+        "https://*.tile.openstreetmap.org",
+        "https://unpkg.com"
+      ],
+      connectSrc: [
+        "'self'",
+        "http://localhost:5000",
+        "http://localhost:5173",
+        "ws://localhost:5173",
+        "http://localhost:8000",
+        "https://api.razorpay.com",
+        "https://lumberjack.razorpay.com",
+        "https://challenges.cloudflare.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "data:",
+        "https://fonts.gstatic.com"
+      ],
+      frameSrc: [
+        "'self'",
+        "https://challenges.cloudflare.com",
+        "https://api.razorpay.com",
+        "https://checkout.razorpay.com"
+      ],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
     },
   }
 }));
@@ -170,6 +213,7 @@ app.use(express.json({
   }
 }));
 app.use(cookieParser());
+app.use(httpLogger);
 
 // ─── Dynamic robots.txt to disallow scrapers and lay honeypot traps ───
 app.get('/robots.txt', (req, res) => {
@@ -390,15 +434,14 @@ const shutdown = (signal) => {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('uncaughtException', (err) => {
-  console.error('Fatal Uncaught Exception:', err.message);
-  console.error(err.stack);
+  logger.fatal({ err: { message: err.message, stack: err.stack } }, `Fatal Uncaught Exception: ${err.message}`);
   // Do not continue in potentially corrupted state; close DB and exit with non-zero status
   sequelize.close().finally(() => {
     process.exit(1);
   });
 });
 process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Promise Rejection:', reason);
+  logger.error({ reason: reason instanceof Error ? reason.message : reason, stack: reason instanceof Error ? reason.stack : undefined }, 'Unhandled Promise Rejection');
 });
 
 module.exports = { app };

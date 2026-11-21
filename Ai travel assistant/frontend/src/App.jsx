@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import AIChatbot from './components/AIChatbot';
+const AIChatbot = lazy(() => import('./components/AIChatbot'));
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthModal from './components/AuthModal';
 import SessionTimeoutModal from './components/SessionTimeoutModal';
@@ -44,7 +44,7 @@ const DestinationsDirectoryPage = lazy(() => import('./pages/DestinationsDirecto
 const DestinationPage = lazy(() => import('./pages/DestinationPage'));
 const DeveloperPortal = lazy(() => import('./pages/DeveloperPortal'));
 const HotelsView = lazy(() => import('./pages/HotelsView'));
-import AIVoiceAssistant from './components/AIVoiceAssistant';
+const AIVoiceAssistant = lazy(() => import('./components/AIVoiceAssistant'));
 
 
 // Admin Pages
@@ -293,10 +293,10 @@ function GlobalAssistants() {
   }
 
   return (
-    <>
+    <Suspense fallback={null}>
       <AIChatbot />
       <AIVoiceAssistant />
-    </>
+    </Suspense>
   );
 }
 

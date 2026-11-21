@@ -11,7 +11,7 @@
     "train_samples": 1600,
     "test_samples": 400,
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:05.647480",
+    "evaluated_at": "2026-11-21T17:12:31.718051",
     "model_version": "1.0.0",
     "loss": 2821.6328
   },
@@ -25,7 +25,7 @@
     "train_samples": 1600,
     "test_samples": 400,
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:06.543785",
+    "evaluated_at": "2026-11-21T17:12:36.964328",
     "model_version": "1.0.0",
     "loss": 0.0015
   },
@@ -41,7 +41,7 @@
     "train_samples": 1600,
     "test_samples": 400,
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:07.303975",
+    "evaluated_at": "2026-11-21T17:12:40.261846",
     "model_version": "1.0.0",
     "accuracy": 49.0,
     "loss": 1.1229
@@ -58,7 +58,7 @@
     "train_samples": 1600,
     "test_samples": 400,
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:08.355267",
+    "evaluated_at": "2026-11-21T17:12:42.992813",
     "model_version": "1.0.0",
     "accuracy": 38.75,
     "loss": 1.7562
@@ -71,7 +71,7 @@
     "train_samples": 4000,
     "test_samples": 1000,
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:09.502858",
+    "evaluated_at": "2026-11-21T17:12:46.349915",
     "model_version": "1.0.0",
     "loss": 0.1161
   },
@@ -85,7 +85,7 @@
     "test_samples": 40,
     "evaluation_method": "disjoint_unseen_queries_zero_leakage",
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:09.535404",
+    "evaluated_at": "2026-11-21T17:12:46.514317",
     "model_version": "1.0.0",
     "loss": 1.7876
   },
@@ -98,7 +98,7 @@
     "train_samples": 370,
     "test_samples": 100,
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:09.684125",
+    "evaluated_at": "2026-11-21T17:12:47.187003",
     "model_version": "1.0.0",
     "loss": 0.101
   },
@@ -111,7 +111,7 @@
     "train_samples": 400,
     "test_samples": 100,
     "dataset_provenance": "synthetic_simulation",
-    "evaluated_at": "2026-11-09T16:53:09.696980",
+    "evaluated_at": "2026-11-21T17:12:47.237830",
     "model_version": "1.0.0",
     "loss": 1.158
   }

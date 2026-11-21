@@ -1,4 +1,9 @@
+'use strict';
+
 const nodemailer = require('nodemailer');
+const { logger } = require('../config/logger');
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 /**
  * Helper to determine if real SMTP credentials are provided
@@ -11,7 +16,7 @@ function isSmtpConfigured() {
     // Check for dummy or placeholder values
     if (user === '@gmail.com' || user.startsWith('@') || !user.includes('@')) return false;
     if (user === 'test@example.com' || user === 'your_email@gmail.com') return false;
-    if (pass === '123165489' || pass === 'password' || pass === 'your_password') return false;
+    if (pass === '123165489' || pass === 'password' || pass === 'your_password' || pass.startsWith('your_')) return false;
 
     return true;
 }
@@ -20,28 +25,60 @@ let transporterInstance = null;
 
 function getTransporter() {
     if (!transporterInstance && isSmtpConfigured()) {
+        const port = parseInt(process.env.SMTP_PORT, 10) || 587;
         transporterInstance = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT, 10) || 587,
-            secure: process.env.SMTP_PORT == 465,
+            port,
+            secure: port === 465,
             auth: {
                 user: (process.env.SMTP_USER || process.env.EMAIL_USER).trim(),
                 pass: (process.env.SMTP_PASS || process.env.EMAIL_PASS).trim(),
             },
-            connectionTimeout: 5000, // 5s connection timeout to prevent hanging requests
-            greetingTimeout: 5000,
-            socketTimeout: 8000,
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000,
         });
     }
     return transporterInstance;
 }
 
 /**
- * Send email safely.
- * If SMTP credentials are dummy or missing, logs to console (especially OTPs) without throwing or stalling requests.
+ * Send mail with exponential backoff retry for transient network errors.
+ */
+async function sendMailWithRetry(transporter, mailOptions, maxRetries = 2) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await transporter.sendMail(mailOptions);
+        } catch (err) {
+            lastError = err;
+            if (attempt < maxRetries) {
+                await new Promise(r => setTimeout(r, 1000 * attempt));
+            }
+        }
+    }
+    throw lastError;
+}
+
+/**
+ * Send email safely with environment-aware dispatch and redaction.
  */
 async function sendEmail({ to, subject, html, text, otpCode, purpose = 'notification' }) {
+    if (!to || typeof to !== 'string') {
+        return { success: false, error: 'Recipient email address is required.' };
+    }
+
+    const fromAddress = process.env.SMTP_FROM || 
+        (process.env.SMTP_USER ? `"AEVORA Support" <${process.env.SMTP_USER.trim()}>` : '"AEVORA Notifications" <noreply@aevora.travel>');
+
+    // 1. If SMTP is not configured
     if (!isSmtpConfigured()) {
+        if (isProduction) {
+            logger.error({ to, purpose }, '[Email Service] Outbound email dispatch failed: SMTP is not configured in production.');
+            return { success: false, error: 'SMTP delivery service is not configured on this server.' };
+        }
+
+        // Development/Test fallback simulation
         if (otpCode) {
             console.log('\n┌────────────────────────────────────────────────────────┐');
             console.log(`│ 🔒 [AEVORA DEV OTP] ${purpose.toUpperCase()}`);
@@ -50,34 +87,37 @@ async function sendEmail({ to, subject, html, text, otpCode, purpose = 'notifica
             console.log(`│ (SMTP not configured. Real email simulated)            `);
             console.log('└────────────────────────────────────────────────────────┘\n');
         } else {
-            console.log(`ℹ️ [Email Simulation] '${subject}' skipped for ${to} (SMTP not configured)`);
+            console.log(`ℹ️ [Email Simulation] '${subject}' skipped for ${to} (SMTP not configured in local environment)`);
         }
         return { success: true, simulated: true };
     }
 
+    // 2. Real SMTP delivery with retries
     try {
         const transporter = getTransporter();
         const mailOptions = {
-            from: `"AEVORA Security" <${(process.env.SMTP_USER || process.env.EMAIL_USER).trim()}>`,
+            from: fromAddress,
             to,
             subject,
             ...(html ? { html } : {}),
             ...(text ? { text } : {})
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ [Email Service] Email sent successfully to ${to} (${subject})`);
-        return { success: true, info };
+        const info = await sendMailWithRetry(transporter, mailOptions, 2);
+        logger.info({ to: to.replace(/(.{2})(.*)(?=@)/, '$1***'), subject, messageId: info?.messageId }, '[Email Service] Outbound email delivered successfully');
+        return { success: true, info, messageId: info?.messageId };
     } catch (err) {
-        console.warn(`⚠️ [Email Service] Failed to send email to ${to}: ${err.message}`);
-        // If an OTP code failed to send via email, print it to console so developer isn't locked out!
-        if (otpCode) {
+        logger.warn({ to: to.replace(/(.{2})(.*)(?=@)/, '$1***'), subject, error: err.message }, '[Email Service] SMTP transmission error');
+
+        // Only log fallback in non-production environments to prevent developer lockout during testing
+        if (!isProduction && otpCode) {
             console.log('\n┌────────────────────────────────────────────────────────┐');
             console.log(`│ ⚠️ [FALLBACK DEV OTP] Email delivery failed`);
             console.log(`│ To: ${to}`);
             console.log(`│ 🔑 Verification Code: ${otpCode}`);
             console.log('└────────────────────────────────────────────────────────┘\n');
         }
+
         return { success: false, error: err.message };
     }
 }
@@ -138,7 +178,6 @@ async function sendBookingConfirmation({ user, booking }) {
     </div>
     `;
 
-    // 1. Dispatch Email (or log simulation if SMTP credentials not filled)
     await sendEmail({
         to: user.email,
         subject,
@@ -146,20 +185,79 @@ async function sendBookingConfirmation({ user, booking }) {
         purpose: 'booking_confirmation'
     });
 
-    // 2. Simulated SMS Notification
-    console.log('\n┌────────────────────────────────────────────────────────┐');
-    console.log(`│ 📱 [AEVORA SMS SIMULATOR] Booking SMS Dispatched      `);
-    console.log(`│ To: ${user.phone || 'N/A'} (${user.name || 'Traveler'})`);
-    console.log(`│ Booking Ref: ${bookingRef} | Train: #${booking.train_number || '12301'}`);
-    console.log(`│ Route: ${booking.source_station_code} ➔ ${booking.destination_station_code}`);
-    console.log(`│ Class: ${booking.travel_class || 'SL'} | Fare: ₹${booking.ticket_fare}`);
-    console.log(`│ Status: CONFIRMED ✅                                   `);
-    console.log('└────────────────────────────────────────────────────────┘\n');
+    // Simulated SMS Notification in dev
+    if (!isProduction) {
+        console.log('\n┌────────────────────────────────────────────────────────┐');
+        console.log(`│ 📱 [AEVORA SMS SIMULATOR] Booking SMS Dispatched      `);
+        console.log(`│ To: ${user.phone || 'N/A'} (${user.name || 'Traveler'})`);
+        console.log(`│ Booking Ref: ${bookingRef} | Train: #${booking.train_number || '12301'}`);
+        console.log(`│ Route: ${booking.source_station_code} ➔ ${booking.destination_station_code}`);
+        console.log(`│ Class: ${booking.travel_class || 'SL'} | Fare: ₹${booking.ticket_fare}`);
+        console.log(`│ Status: CONFIRMED ✅                                   `);
+        console.log('└────────────────────────────────────────────────────────┘\n');
+    }
+}
+
+/**
+ * Send password reset email with secure token link
+ */
+async function sendPasswordResetEmail({ user, resetToken }) {
+    if (!user || !user.email) return;
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(user.email)}`;
+
+    const subject = '🔒 AEVORA: Password Reset Request';
+    const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <h2 style="color: #0f172a;">Password Reset Request</h2>
+        <p>Hello ${user.name || 'Traveler'},</p>
+        <p>We received a request to reset your password for your AEVORA account. Click the button below to choose a new password:</p>
+        <div style="text-align: center; margin: 24px 0;">
+            <a href="${resetUrl}" style="background: #0284c7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Reset Password</a>
+        </div>
+        <p style="color: #64748b; font-size: 13px;">This link will expire in 15 minutes. If you did not make this request, you can safely ignore this email.</p>
+    </div>
+    `;
+
+    return sendEmail({
+        to: user.email,
+        subject,
+        html,
+        purpose: 'password_reset'
+    });
+}
+
+/**
+ * Send payment receipt email
+ */
+async function sendPaymentNotification({ user, booking, transaction }) {
+    if (!user || !user.email) return;
+
+    const subject = `💳 AEVORA Payment Receipt: ₹${transaction.amount || booking.ticket_fare}`;
+    const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <h2 style="color: #0f172a;">Payment Confirmation</h2>
+        <p>Dear ${user.name || 'Traveler'},</p>
+        <p>Your payment of <strong>₹${transaction.amount || booking.ticket_fare}</strong> has been successfully processed.</p>
+        <p><strong>Transaction ID:</strong> ${transaction.transaction_id || transaction.id}</p>
+        <p><strong>Booking Reference:</strong> ${booking.booking_reference}</p>
+    </div>
+    `;
+
+    return sendEmail({
+        to: user.email,
+        subject,
+        html,
+        purpose: 'payment_receipt'
+    });
 }
 
 module.exports = {
     sendEmail,
     sendBookingConfirmation,
+    sendPasswordResetEmail,
+    sendPaymentNotification,
     isSmtpConfigured,
     getTransporter
 };

@@ -1,5 +1,6 @@
 const { SupportTicket, SupportMessage, User } = require('../models');
 const n8nService = require('../services/n8nService');
+const { logger } = require('../config/logger');
 
 const crypto = require('crypto');
 
@@ -98,7 +99,7 @@ exports.handleSupportReply = async (req, res) => {
       ticket_status: ticket.status
     });
   } catch (error) {
-    console.error('[n8nController] Error handling support reply:', error);
+    logger.error({ error: error.message }, '[n8nController] Error handling support reply');
     res.status(500).json({ success: false, message: 'Internal server error. Please try again later.' });
   }
 };
@@ -124,7 +125,7 @@ exports.handleBookingNotification = async (req, res) => {
       received: { booking_id, user_id, title, content }
     });
   } catch (error) {
-    console.error('[n8nController] Error handling booking notification:', error);
+    logger.error({ error: error.message }, '[n8nController] Error handling booking notification');
     res.status(500).json({ success: false, message: 'Internal server error. Please try again later.' });
   }
 };
@@ -149,7 +150,7 @@ exports.handleDelayAlert = async (req, res) => {
       received: { pnr, train_number, delay_minutes, title, advisory }
     });
   } catch (error) {
-    console.error('[n8nController] Error handling delay alert:', error);
+    logger.error({ error: error.message }, '[n8nController] Error handling delay alert');
     res.status(500).json({ success: false, message: 'Internal server error. Please try again later.' });
   }
 };

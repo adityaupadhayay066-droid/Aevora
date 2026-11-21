@@ -1,0 +1,137 @@
+name: AEVORA Security, Audit & Quality Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ─── 1. Dependency Security & Vulnerability Auditing ───
+  dependency-audit:
+    name: Dependency Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            Ai travel assistant/backend/package-lock.json
+            Ai travel assistant/frontend/package-lock.json
+
+      - name: Audit Backend Dependencies (Fail on Critical/High)
+        run: |
+          cd "Ai travel assistant/backend"
+          npm audit --audit-level=high
+
+      - name: Audit Frontend Dependencies (Fail on Critical/High)
+        run: |
+          cd "Ai travel assistant/frontend"
+          npm audit --audit-level=high
+
+  # ─── 2. Backend Security & Regression Suite ───
+  backend-security-tests:
+    name: Backend Security & Regression Suite
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: traveliq
+          MYSQL_USER: traveliq_app
+          MYSQL_PASSWORD: testpassword123
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Backend Dependencies
+        run: |
+          cd "Ai travel assistant/backend"
+          npm ci
+
+      - name: Run Core Security & Regression Test Suites
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: traveliq_app
+          DB_PASSWORD: testpassword123
+          DB_NAME: traveliq
+          JWT_SECRET: ci_test_jwt_secret_key_minimum_32_characters_long_1234
+          INTERNAL_SERVICE_KEY: ci_test_internal_svc_token_secure_2026
+        run: |
+          cd "Ai travel assistant/backend"
+          node tests/authIsolationRegression.test.js
+          node tests/paymentVerification.test.js
+          node tests/roleHierarchy.test.js
+          node tests/securityHardening.test.js
+          node tests/hotelReservationIntegrity.test.js
+          node tests/n8nPromptInjection.test.js
+          node tests/bookingCreationRegression.test.js
+
+  # ─── 3. Frontend Production Build & Code-Splitting Verification ───
+  frontend-build:
+    name: Frontend Production Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd "Ai travel assistant/frontend"
+          npm ci
+
+      - name: Build Production Assets (Vite)
+        run: |
+          cd "Ai travel assistant/frontend"
+          npm run build
+
+  # ─── 4. FastAPI AI Services Security & Auth Testing ───
+  fastapi-tests:
+    name: FastAPI AI Microservice Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install AI Service Dependencies
+        run: |
+          cd "Ai travel assistant/ai-services"
+          pip install -r requirements.txt pytest httpx
+
+      - name: Run AI Route Authentication & Security Tests
+        env:
+          INTERNAL_SERVICE_KEY: traveliq_internal_svc_token_secure_2026
+          PYTHONPATH: "Ai travel assistant/ai-services"
+        run: |
+          pytest "Ai travel assistant/ai-services/tests"
