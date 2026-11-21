@@ -4,8 +4,12 @@ const rateLimit = require('express-rate-limit');
 const THREE_TO_FOUR_MINUTES_MS = 3.5 * 60 * 1000;
 
 // Verified client IP extractor - binds to physical socket address unless behind trusted proxy
+const isTrustProxy = process.env.TRUST_PROXY === 'true' || 
+                     process.env.TRUST_PROXY === '1' || 
+                     (!isNaN(process.env.TRUST_PROXY) && Number(process.env.TRUST_PROXY) > 0);
+
 const getClientIp = (req) => {
-    if (process.env.TRUST_PROXY === 'true') {
+    if (isTrustProxy) {
         return req.ip || req.socket?.remoteAddress || '127.0.0.1';
     }
     // Default: use socket address to prevent X-Forwarded-For spoofing and header rotation bypasses

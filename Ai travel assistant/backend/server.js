@@ -137,9 +137,11 @@ app.use(cors({
 
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed === '*' || allowed === origin) return true;
-      if (origin.endsWith('.netlify.app') || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app')) {
-        const lowerOrigin = origin.toLowerCase();
-        if (lowerOrigin.includes('aevora') || lowerOrigin.includes('traveliq')) return true;
+      // Strictly match official production domain patterns instead of loose substring matching
+      const AEVORA_DOMAIN_REGEX = /^https:\/\/(?:[a-z0-9-]+\.)*(?:aevora\.travel|traveliq\.com|traveliq\.in)$/i;
+      const TRUSTED_DEPLOYMENT_REGEX = /^https:\/\/(?:aevora|traveliq)(?:-[a-z0-9]+)?\.(?:netlify\.app|onrender\.com|vercel\.app)$/i;
+      if (AEVORA_DOMAIN_REGEX.test(origin) || TRUSTED_DEPLOYMENT_REGEX.test(origin)) {
+        return true;
       }
       if (process.env.NODE_ENV !== 'production') {
         if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return true;

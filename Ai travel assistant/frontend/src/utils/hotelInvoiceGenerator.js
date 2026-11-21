@@ -49,6 +49,17 @@ export function numberToWordsINR(amount) {
   return `${result.trim()} Rupees Only`;
 }
 
+// Robust HTML escaping to prevent XSS in receipt generation
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function generateHotelInvoiceHTML(booking = {}) {
   // Extract user from localStorage if not directly in booking
   let defaultUserName = 'Guest Traveler';
@@ -65,25 +76,26 @@ export function generateHotelInvoiceHTML(booking = {}) {
     }
   } catch (e) {}
 
-  const bookingId = booking.id || booking.bookingReference || `TIQ-STAY-${Math.floor(100000 + Math.random() * 900000)}`;
-  const cleanId = bookingId.replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase();
+  const rawBookingId = booking.id || booking.bookingReference || `TIQ-STAY-${Math.floor(100000 + Math.random() * 900000)}`;
+  const cleanId = rawBookingId.replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase();
   const invoiceNo = `INV/2026-27/TIQ-${cleanId || '892411'}`;
   const transactionId = `TXN-TIQ-UPI-${cleanId}927`;
 
-  const guestName = booking.guestName || booking.guest_name || defaultUserName;
-  const guestEmail = booking.guestEmail || booking.guest_email || defaultUserEmail;
-  const guestPhone = booking.guestPhone || booking.guest_phone || defaultUserPhone;
+  const bookingId = escapeHtml(rawBookingId);
+  const guestName = escapeHtml(booking.guestName || booking.guest_name || defaultUserName);
+  const guestEmail = escapeHtml(booking.guestEmail || booking.guest_email || defaultUserEmail);
+  const guestPhone = escapeHtml(booking.guestPhone || booking.guest_phone || defaultUserPhone);
   
-  const hotelName = booking.hotelName || booking.hotel_name || 'Stay Villa Dormitory & Luxury Pods';
-  const city = booking.city || 'Mumbai';
-  const category = booking.isHostel ? 'Backpacker Hostel & Pods' : (booking.category || 'Premium Hotel & Suites');
-  const roomType = booking.roomType || (booking.isHostel ? 'Futuristic Single Capsule Pod' : 'Deluxe Comfort Room');
+  const hotelName = escapeHtml(booking.hotelName || booking.hotel_name || 'Stay Villa Dormitory & Luxury Pods');
+  const city = escapeHtml(booking.city || 'Mumbai');
+  const category = escapeHtml(booking.isHostel ? 'Backpacker Hostel & Pods' : (booking.category || 'Premium Hotel & Suites'));
+  const roomType = escapeHtml(booking.roomType || (booking.isHostel ? 'Futuristic Single Capsule Pod' : 'Deluxe Comfort Room'));
   
   const unitsCount = booking.unitsCount || 1;
   const guestsCount = booking.guestsCount || 1;
   const nights = booking.nights || 1;
-  const mealPlan = booking.mealPlan || 'Complimentary Breakfast (CP)';
-  const specialRequests = Array.isArray(booking.specialRequests) ? booking.specialRequests : [];
+  const mealPlan = escapeHtml(booking.mealPlan || 'Complimentary Breakfast (CP)');
+  const specialRequests = Array.isArray(booking.specialRequests) ? booking.specialRequests.map(r => escapeHtml(r)) : [];
   
   const checkInDate = booking.checkInDate || '2026-09-19';
   const checkOutDate = booking.checkOutDate || '2026-10-01';
@@ -867,7 +879,7 @@ export function generateHotelInvoiceHTML(booking = {}) {
             <span class="guest-pill">👥 ${guestsCount} Traveler${guestsCount > 1 ? 's' : ''}</span>
             <span class="guest-pill">🛏️ ${unitsCount} ${booking.isHostel ? 'Bed' : 'Room'}${unitsCount > 1 ? 's' : ''}</span>
             <span class="guest-pill" style="color: #15803D; background: #DCFCE7; border-color: #86EFAC;">
-              🛡️ ${booking.govIdType || 'Aadhaar Card'}: ${(booking.govIdNumber || 'XXXX XXXX 4829')} (KYC Verified)
+              🛡️ ${escapeHtml(booking.govIdType || 'Aadhaar Card')}: ${escapeHtml(booking.govIdNumber || 'XXXX XXXX 4829')} (KYC Verified)
             </span>
           </div>
         </div>
@@ -876,7 +888,7 @@ export function generateHotelInvoiceHTML(booking = {}) {
           <span class="field-tag">AEVORA Booking Reference ID</span>
           <div class="booking-ref-box">${bookingId}</div>
           <div class="contact-info-line" style="margin-top: 5px;">
-            Payment Method: <strong style="color: #0F172A;">${paymentMethod}</strong>
+            Payment Method: <strong style="color: #0F172A;">${escapeHtml(paymentMethod)}</strong>
           </div>
           <div class="payment-status-tag">
             <span style="display:inline-block; width:7px; height:7px; background:${isPaid ? '#22C55E' : '#E58A3A'}; border-radius:50%;"></span>

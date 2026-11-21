@@ -270,10 +270,44 @@ function loadHotelData() {
           console.warn('⚠️ Skipped malformed hotel row:', parseErr.message);
         }
       })
-      .on('end', () => {
+      .on('end', async () => {
         hotelsCache = hotels;
         isLoaded = true;
         console.log(`✅ Hotel dataset loaded: ${hotels.length} stays (${hotels.filter(h => h.isHostel).length} hostels/dorms) across ${getAvailableCities().length} cities.`);
+        try {
+          const HotelReservation = getHotelReservationModel();
+          if (HotelReservation && HotelReservation.findAll) {
+            const Op = require('sequelize').Op;
+            const dbRecords = await HotelReservation.findAll({
+              where: {
+                status: { [Op.notIn]: ['CANCELLED', 'REFUNDED'] }
+              }
+            });
+            if (dbRecords && dbRecords.length > 0) {
+              reservationsCache = dbRecords.map(r => ({
+                id: r.reservation_code || `TIQ-STAY-${r.id}`,
+                bookingReference: r.reservation_code || `TIQ-STAY-${r.id}`,
+                userId: String(r.user_id),
+                createdAt: r.created_at || new Date().toISOString(),
+                status: r.status,
+                hotelName: r.hotel_name,
+                city: r.city,
+                category: r.category,
+                isHostel: !!r.is_hostel,
+                roomType: r.room_type,
+                unitsCount: r.units_count,
+                guestName: r.guest_name,
+                checkInDate: r.check_in_date,
+                checkOutDate: r.check_out_date,
+                guestsCount: r.guests_count,
+                mealPlan: r.meal_plan
+              }));
+              console.log(`✅ Synchronized ${reservationsCache.length} active hotel reservations from database into capacity cache.`);
+            }
+          }
+        } catch (syncErr) {
+          console.warn('[HotelService] Active reservation sync notice:', syncErr.message);
+        }
         resolve(true);
       })
       .on('error', (err) => {
@@ -824,6 +858,15 @@ function createReservation(userId, data) {
     const existingName = (r.hotelName || '').toLowerCase().trim();
     if (existingName !== targetHotelName && !existingName.includes(targetHotelName) && !targetHotelName.includes(existingName)) return false;
     if (r.status === 'CANCELLED' || r.status === 'REFUNDED') return false;
+
+    // Room-type level capacity isolation
+    const existingRoom = (r.roomType || '').toLowerCase().trim();
+    const targetRoom = (data.roomType || '').toLowerCase().trim();
+    const resolvedRoom = (resolvedRoomName || '').toLowerCase().trim();
+    if (existingRoom && targetRoom && existingRoom !== targetRoom && existingRoom !== resolvedRoom) {
+      return false;
+    }
+
     const existingIn = new Date(r.checkInDate).getTime();
     const existingOut = new Date(r.checkOutDate).getTime();
     return checkInTime < existingOut && checkOutTime > existingIn;
@@ -1130,6 +1173,10 @@ function getAllReservations() {
   return reservationsCache;
 }
 
+function clearReservationsCache() {
+  reservationsCache = [];
+}
+
 module.exports = {
   loadHotelData,
   searchHotels,
@@ -1144,5 +1191,7 @@ module.exports = {
   getReservationsByUser,
   getReservationById,
   getAllReservations,
+  clearReservationsCache,
+  getHotelReservationModel,
   maskGovId
 };

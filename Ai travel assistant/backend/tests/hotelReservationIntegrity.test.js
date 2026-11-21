@@ -23,7 +23,12 @@ async function runHotelIntegrityTests() {
   }
 
   // Ensure hotel dataset is loaded for authoritative checks
-  hotelService.loadHotelData();
+  await hotelService.loadHotelData();
+  hotelService.clearReservationsCache();
+  const HotelReservation = hotelService.getHotelReservationModel();
+  if (HotelReservation && HotelReservation.destroy) {
+    await HotelReservation.destroy({ where: { user_id: [1, 2, 3] } }).catch(() => {});
+  }
 
   const futureCheckIn = new Date();
   futureCheckIn.setDate(futureCheckIn.getDate() + 10);
@@ -246,6 +251,7 @@ async function runHotelIntegrityTests() {
 
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   if (failed > 0) process.exit(1);
+  process.exit(0);
 }
 
 if (require.main === module) {

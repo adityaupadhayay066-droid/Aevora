@@ -15,6 +15,9 @@ const isRemoteHost = process.env.DB_HOST &&
   process.env.DB_HOST !== 'mysql';
 
 const useSSL = process.env.DB_SSL === 'true' || (process.env.DB_SSL !== 'false' && isRemoteHost);
+const rejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED === 'false' 
+  ? false 
+  : (process.env.NODE_ENV === 'production' && !process.env.DB_SSL_INSECURE ? true : false);
 
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'traveliq',
@@ -28,7 +31,8 @@ const sequelize = new Sequelize(
     dialectOptions: useSSL ? {
       ssl: {
         require: true,
-        rejectUnauthorized: false
+        rejectUnauthorized: rejectUnauthorized,
+        ...(process.env.DB_CA_CERT ? { ca: process.env.DB_CA_CERT } : {})
       }
     } : {},
     pool: {
