@@ -13,44 +13,63 @@ function getEncryptionKey() {
   }
   throw new Error('Encryption key missing: Neither ENCRYPTION_KEY nor JWT_SECRET is configured.');
 }
-const IV_LENGTH = 16;
-const HEX_32_REGEX = /^[0-9a-fA-F]{32}$/;
-const HEX_REGEX = /^[0-9a-fA-F]+$/;
+const GCM_PREFIX = 'gcm:';
+const GCM_IV_LENGTH = 12; // 96-bit IV recommended for GCM
 
-function isEncrypted(text) {
-  if (typeof text !== 'string') return false;
-  const parts = text.split(':');
-  if (parts.length !== 2) return false;
-  const [ivHex, cipherHex] = parts;
-  return HEX_32_REGEX.test(ivHex) && cipherHex.length >= 32 && cipherHex.length % 32 === 0 && HEX_REGEX.test(cipherHex);
+function isGcmEncrypted(text) {
+  if (typeof text !== 'string' || !text.startsWith(GCM_PREFIX)) return false;
+  const parts = text.slice(GCM_PREFIX.length).split(':');
+  return parts.length === 3 && parts[0].length === 24 && parts[1].length === 32 && parts[2].length > 0;
 }
 
 function encrypt(text) {
   if (!text) return text;
-  // If already encrypted with 32-hex IV, skip to avoid double-encryption
-  if (isEncrypted(text)) return text;
-  const key = getEncryptionKey();
-  let iv = crypto.randomBytes(IV_LENGTH);
-  let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key, 'hex'), iv);
-  let encrypted = cipher.update(String(text), 'utf8');
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString('hex') + ':' + encrypted.toString('hex');
+  // If already encrypted with AES-256-GCM, avoid re-encrypting
+  if (isGcmEncrypted(text)) return text;
+
+  const key = Buffer.from(getEncryptionKey(), 'hex');
+  const iv = crypto.randomBytes(GCM_IV_LENGTH);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(String(text), 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+
+  return `${GCM_PREFIX}${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
 }
 
 function decrypt(text) {
-  if (!text) return text;
-  if (!isEncrypted(text)) return text; // Not encrypted
-  try {
-    let textParts = text.split(':');
-    let iv = Buffer.from(textParts[0], 'hex');
-    let encryptedText = Buffer.from(textParts[1], 'hex');
-    let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(getEncryptionKey(), 'hex'), iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString('utf8');
-  } catch (error) {
-    return text; // Fallback to raw text if decryption fails
+  if (!text || typeof text !== 'string') return text;
+
+  // 1. Authenticated AES-256-GCM decryption
+  if (isGcmEncrypted(text)) {
+    try {
+      const parts = text.slice(GCM_PREFIX.length).split(':');
+      const iv = Buffer.from(parts[0], 'hex');
+      const authTag = Buffer.from(parts[1], 'hex');
+      const encryptedText = Buffer.from(parts[2], 'hex');
+      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(getEncryptionKey(), 'hex'), iv);
+      decipher.setAuthTag(authTag);
+      const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+      return decrypted.toString('utf8');
+    } catch (_gcmError) {
+      return text;
+    }
   }
+
+  // 2. Legacy AES-256-CBC decryption fallback (for existing database records)
+  const legacyParts = text.split(':');
+  if (legacyParts.length === 2 && HEX_32_REGEX.test(legacyParts[0])) {
+    try {
+      const iv = Buffer.from(legacyParts[0], 'hex');
+      const encryptedText = Buffer.from(legacyParts[1], 'hex');
+      const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(getEncryptionKey(), 'hex'), iv);
+      const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+      return decrypted.toString('utf8');
+    } catch (_cbcError) {
+      return text;
+    }
+  }
+
+  return text;
 }
 
 

@@ -131,9 +131,9 @@ async function createSessionAndLog(user, deviceId, userAgent, ipAddress, isTrust
     user.last_login = new Date();
     user.last_ip = ipAddress;
 
-    // Parallelize session, token, and user updates for high-performance authentication
-    await Promise.all([
-        Session.create({
+    // Atomically persist session, token, and user updates within a database transaction
+    await sequelize.transaction(async (t) => {
+        await Session.create({
             session_id: sessionId,
             user_id: user.id,
             device_id: deviceId,
@@ -145,32 +145,42 @@ async function createSessionAndLog(user, deviceId, userAgent, ipAddress, isTrust
             login_location: loginLocation,
             is_trusted: isTrusted,
             expires_at: expiresAt
-        }),
-        RefreshToken.create({
+        }, { transaction: t });
+
+        await RefreshToken.create({
             user_id: user.id,
             token: refreshToken,
             device_id: deviceId,
             expires_at: rtExpires
-        }),
-        user.save(),
-        LoginHistory.create({
-            user_id: user.id,
-            session_id: sessionId,
-            device_type,
-            device_name,
-            os,
-            browser,
-            ip_address: ipAddress,
-            location: loginLocation
-        }).catch(err => console.warn('[Session Log Warning]: LoginHistory creation failed:', err.message)),
-        UserActivityLog.create({
-            user_id: user.id,
-            event_type: 'LOGIN_SUCCESS',
-            ip_address: ipAddress,
-            device_info: `${device_type} - ${browser} on ${os}`,
-            location: loginLocation
-        }).catch(err => console.warn('[Session Log Warning]: UserActivityLog creation failed:', err.message))
-    ]);
+        }, { transaction: t });
+
+        await user.save({ transaction: t });
+    });
+
+    // Non-blocking telemetry writes wrapped in try/catch to guarantee login robustness
+    try {
+        await Promise.all([
+            LoginHistory.create({
+                user_id: user.id,
+                session_id: sessionId,
+                device_type,
+                device_name,
+                os,
+                browser,
+                ip_address: ipAddress,
+                location: loginLocation
+            }).catch(err => console.warn('[Session Log Warning]: LoginHistory creation failed:', err.message)),
+            UserActivityLog.create({
+                user_id: user.id,
+                event_type: 'LOGIN_SUCCESS',
+                ip_address: ipAddress,
+                device_info: `${device_type} - ${browser} on ${os}`,
+                location: loginLocation
+            }).catch(err => console.warn('[Session Log Warning]: UserActivityLog creation failed:', err.message))
+        ]);
+    } catch (logErr) {
+        console.warn('[Session Log Warning]: Telemetry logging error:', logErr.message);
+    }
 
     return { sessionId, deviceId, device_type, device_name, os, browser, loginLocation, refreshToken };
 }

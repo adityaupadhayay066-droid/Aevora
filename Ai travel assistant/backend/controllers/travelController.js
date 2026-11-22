@@ -8,7 +8,7 @@ const { getTrainTrackingDetails } = require('../services/trainTrackingService');
 const { resolveStation, parseTravelDate } = require('../services/stationResolver');
 const { validateTransportRecord } = require('../services/transportValidationEngine');
 const { searchFerriesFromProvider, VERIFIED_FERRY_SCHEDULES } = require('../services/adapters/ferryProviderAdapter');
-const { calculateRailwayFare, estimateRailDistance } = require('../utils/railwayFareCalculator');
+const { calculateRailwayFare, estimateRailDistance, calculateJourneyRailwayFare } = require('../utils/railwayFareCalculator');
 
 const predictTrip = async (req, res) => {
     try {
@@ -249,7 +249,7 @@ const searchRoutes = async (req, res) => {
                 if (durationHours < 0) durationHours += 24; 
             }
 
-            // Calculate journey-dependent segment distance and class fares
+            // Calculate authoritative journey-dependent segment distance and class fares
             let segmentDistanceKm = 0;
             if (sourceStation?.latitude && destStation?.latitude) {
                 segmentDistanceKm = estimateRailDistance(
@@ -261,21 +261,51 @@ const searchRoutes = async (req, res) => {
             }
 
             let journeyFares = {};
-            if (segmentDistanceKm > 0) {
-                const supportedClasses = ['1A', '2A', '3A', '3E', 'SL', '2S'];
-                for (const cls of supportedClasses) {
+            // Determine strictly offered classes from TrainFare directory
+            const offeredClasses = fareMap[route.train_number] && Object.keys(fareMap[route.train_number]).length > 0
+                ? Object.keys(fareMap[route.train_number])
+                : null;
+            const targetClasses = offeredClasses || ['SL', '3A', '2A'];
+
+            try {
+                // Authoritatively calculate schedule distance and sequence to exactly match booking charge
+                const baseJourney = await calculateJourneyRailwayFare({
+                    trainNumber: route.train_number,
+                    sourceStationCode: originStnCode,
+                    destStationCode: destStnCode,
+                    travelClass: targetClasses.includes('3A') ? '3A' : targetClasses[0],
+                    passengers: 1
+                });
+                const authoritativeDistKm = baseJourney.distanceKm;
+                const isSuperfast = baseJourney.isSuperfast;
+
+                for (const cls of targetClasses) {
                     const fRes = calculateRailwayFare({
-                        distanceKm: segmentDistanceKm,
+                        distanceKm: authoritativeDistKm,
                         travelClass: cls,
-                        isSuperfast: true,
+                        isSuperfast,
                         passengers: 1
                     });
                     if (fRes?.farePerPassenger) {
                         journeyFares[cls] = fRes.farePerPassenger;
                     }
                 }
-            } else if (fareMap[route.train_number]) {
-                journeyFares = fareMap[route.train_number];
+            } catch (_journeyErr) {
+                if (segmentDistanceKm > 0) {
+                    for (const cls of targetClasses) {
+                        const fRes = calculateRailwayFare({
+                            distanceKm: segmentDistanceKm,
+                            travelClass: cls,
+                            isSuperfast: true,
+                            passengers: 1
+                        });
+                        if (fRes?.farePerPassenger) {
+                            journeyFares[cls] = fRes.farePerPassenger;
+                        }
+                    }
+                } else if (fareMap[route.train_number]) {
+                    journeyFares = fareMap[route.train_number];
+                }
             }
 
             const price = Object.keys(journeyFares).length > 0
@@ -352,55 +382,67 @@ const searchRoutes = async (req, res) => {
                     const firstName = firstLeg.service_name || firstLeg.train_name || firstLeg.name || `Service #${firstNo}`;
                     const lastName = lastLeg.service_name || lastLeg.train_name || lastLeg.name || `Service #${lastNo}`;
 
-                    let combinedFare = null;
-                    if (firstLeg.fare && lastLeg.fare) {
-                        combinedFare = firstLeg.fare + lastLeg.fare;
-                    } else if (conn.fare) {
-                        combinedFare = conn.fare;
-                    } else {
-                        // Robust lookup in TrainFare database
-                        const f1 = (await TrainFare.findOne({ where: { train_number: String(firstNo).trim(), class_code: 'SL' } }))?.fare 
-                                || (await TrainFare.findOne({ where: { train_number: String(firstNo).trim() } }))?.fare || 0;
-                        const f2 = (await TrainFare.findOne({ where: { train_number: String(lastNo).trim(), class_code: 'SL' } }))?.fare 
-                                || (await TrainFare.findOne({ where: { train_number: String(lastNo).trim() } }))?.fare || 0;
-                        if (f1 > 0 || f2 > 0) {
-                            combinedFare = f1 + f2;
-                        }
-                    }
-
                     const normalizedLegs = await Promise.all((conn.legs || []).map(async (l) => {
                         const trainNo = String(l.service_number || l.train_number || l.number || '').trim();
                         let legFares = null;
                         let legPrice = l.fare || null;
                         let legClasses = [];
+                        const fromCode = l.from_station || l.from || l.origin;
+                        const toCode = l.to_station || l.to || l.destination;
+                        const legDepIso = l.departure_time_utc;
+                        const legDepDate = legDepIso ? legDepIso.split('T')[0] : (departureDate || null);
 
-                        if (trainNo && !trainNo.includes('INTER-TERMINAL')) {
-                            const fareRecords = await TrainFare.findAll({
-                                where: { train_number: trainNo },
-                                attributes: ['class_code', 'fare']
-                            });
-                            if (fareRecords && fareRecords.length > 0) {
+                        if (trainNo && !trainNo.includes('INTER-TERMINAL') && !l.is_cluster_transfer && fromCode && toCode) {
+                            try {
+                                const fareRecords = await TrainFare.findAll({
+                                    where: { train_number: trainNo },
+                                    attributes: ['class_code']
+                                });
+                                const offeredLegClasses = (fareRecords && fareRecords.length > 0)
+                                    ? fareRecords.map(r => String(r.class_code).toUpperCase().trim())
+                                    : ['SL', '3A', '2A'];
+
+                                // Calculate authoritative journey fare for THIS LEG SPECIFICALLY from fromCode to toCode
+                                const baseLegJourney = await calculateJourneyRailwayFare({
+                                    trainNumber: trainNo,
+                                    sourceStationCode: fromCode,
+                                    destStationCode: toCode,
+                                    travelClass: offeredLegClasses.includes('3A') ? '3A' : offeredLegClasses[0],
+                                    passengers: 1
+                                });
+
                                 legFares = {};
-                                for (const fr of fareRecords) {
-                                    const code = String(fr.class_code).toUpperCase().trim();
-                                    legFares[code] = fr.fare;
-                                    legClasses.push(`${code} - ₹${Number(fr.fare).toLocaleString('en-IN')}`);
+                                for (const cls of offeredLegClasses) {
+                                    const fRes = calculateRailwayFare({
+                                        distanceKm: baseLegJourney.distanceKm,
+                                        travelClass: cls,
+                                        isSuperfast: baseLegJourney.isSuperfast,
+                                        passengers: 1
+                                    });
+                                    if (fRes?.farePerPassenger) {
+                                        legFares[cls] = fRes.farePerPassenger;
+                                        legClasses.push(`${cls} - ₹${Number(fRes.farePerPassenger).toLocaleString('en-IN')}`);
+                                    }
                                 }
-                                if (!legPrice) {
-                                    legPrice = legFares['SL'] || legFares['3A'] || legFares['2S'] || Math.min(...Object.values(legFares));
+                                if (Object.keys(legFares).length > 0) {
+                                    legPrice = legFares['SL'] || legFares['3A'] || Math.min(...Object.values(legFares));
                                 }
+                            } catch (_legErr) {
+                                // Fallback to recorded leg fare if timetable sequence resolution is unavailable
                             }
                         }
 
                         return {
                             ...l,
+                            departure_date: legDepDate,
+                            journey_date: legDepDate,
                             train_name: l.service_name || l.train_name || l.name,
                             service_name: l.service_name || l.train_name || l.name,
                             service_number: trainNo || l.service_number,
-                            from: l.from_station || l.from || l.origin,
-                            from_station: l.from_station || l.from || l.origin,
-                            to: l.to_station || l.to || l.destination,
-                            to_station: l.to_station || l.to || l.destination,
+                            from: fromCode,
+                            from_station: fromCode,
+                            to: toCode,
+                            to_station: toCode,
                             departure: l.departure_time_clock || l.departure || l.dep_time,
                             departure_time_clock: l.departure_time_clock || l.departure || l.dep_time,
                             arrival: l.arrival_time_clock || l.arrival || l.arr_time,
@@ -410,6 +452,19 @@ const searchRoutes = async (req, res) => {
                             classes: legClasses
                         };
                     }));
+
+                    // Compute authoritative combined fare as the sum of all individual legs
+                    let calculatedSum = 0;
+                    let hasBookableLegs = false;
+                    for (const nl of normalizedLegs) {
+                        if (nl.price) {
+                            calculatedSum += nl.price;
+                            hasBookableLegs = true;
+                        } else if (nl.fare) {
+                            calculatedSum += nl.fare;
+                        }
+                    }
+                    const combinedFare = hasBookableLegs ? calculatedSum : (conn.fare || null);
 
                     finalTrains.push({
                         ...conn,

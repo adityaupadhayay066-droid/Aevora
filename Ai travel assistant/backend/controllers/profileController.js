@@ -906,35 +906,26 @@ const cancelBooking = async (req, res) => {
       return res.status(400).json({ message: 'Booking has already been cancelled and refunded.' });
     }
 
-    const wasPaid = booking.payment_status === 'Paid';
+    const wasPaid = booking.payment_status === 'Paid' || booking.payment_status === 'Refund Pending';
     let refundBreakdown = null;
 
-    await sequelize.transaction(async (t) => {
-      if (wasPaid) {
-        const { computeCancellationRefund } = require('./paymentController');
-        refundBreakdown = await computeCancellationRefund(booking, booking.ticket_fare);
-
-        await transitionBookingState({
-          bookingId: booking.id,
-          targetBookingStatus: 'Cancelled',
-          targetPaymentStatus: 'Refund Pending',
-          actor: { id: req.user.id, role: 'USER' },
-          reason: `User cancelled paid booking (${refundBreakdown.policyTier}: refund ₹${refundBreakdown.refundAmount}, fee ₹${refundBreakdown.cancellationCharge})`,
-          existingTransaction: t
-        });
-
-        const txn = await Transaction.findOne({
-          where: { booking_id: booking.id, status: 'Success' },
-          lock: t.LOCK.UPDATE,
-          transaction: t
-        });
-
-        if (txn) {
-          txn.status = 'Refund Pending';
-          txn.refund_amount = refundBreakdown.refundAmount;
-          await txn.save({ transaction: t });
-        }
-      } else {
+    if (wasPaid) {
+      const { executeRefundCore } = require('./paymentController');
+      const refundResult = await executeRefundCore({
+        booking_id: booking.id,
+        userId: req.user.id,
+        role: req.user.role,
+        adminRole: req.user.admin_role,
+        reason: 'User cancelled booking via My Trips'
+      });
+      refundBreakdown = {
+        refundAmount: refundResult.refund_amount,
+        cancellationCharge: refundResult.cancellation_charge,
+        policyTier: refundResult.policy_tier,
+        refundId: refundResult.refund_id
+      };
+    } else {
+      await sequelize.transaction(async (t) => {
         await transitionBookingState({
           bookingId: booking.id,
           targetBookingStatus: 'Cancelled',
@@ -948,8 +939,8 @@ const cancelBooking = async (req, res) => {
           { status: 'Cancelled' },
           { where: { booking_id: booking.id, status: 'Pending' }, transaction: t }
         );
-      }
-    });
+      });
+    }
 
     // Trigger dynamic analytics sync for negative revenue / subtraction
     if (Analytics && wasPaid) {

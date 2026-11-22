@@ -10,10 +10,35 @@ const path = require('path');
 const csv = require('csv-parser');
 const crypto = require('crypto');
 
+// ─── Verified Iconic & Benchmark Properties (Always available) ───
+const VERIFIED_CORE_STAYS = [
+  {
+    id: 'htl-kolkata-taj-bengal',
+    name: 'Taj Bengal',
+    city: 'kolkata',
+    rating: 4.7,
+    ratingCount: 1420,
+    price: 8500,
+    features: ['Free breakfast', 'Free Wi-Fi', 'Pool', 'Air conditioning', 'Spa', 'Restaurant'],
+    type: '5-Star Hotel',
+    category: '5-Star Luxury',
+    isHostel: false,
+    hasRestaurant: true,
+    checkIn: '12:00 PM',
+    checkOut: '11:00 AM',
+    policies: { freeCancellation: true, payAtProperty: true, instantConfirmation: true },
+    roomTypes: [
+      { id: 'deluxe-king', name: 'Deluxe City View Room', bedType: '1 King Bed or 2 Twin Beds', pricePerNight: 8500, capacity: 2, availableUnits: 5 },
+      { id: 'executive-suite', name: 'Executive Club Suite + Lounge Access', bedType: '1 Extra Large King Bed', pricePerNight: 12500, capacity: 3, availableUnits: 3 },
+      { id: 'presidential-suite', name: 'Grand Signature Suite', bedType: 'Master Suite + Dining Area', pricePerNight: 18700, capacity: 4, availableUnits: 1 }
+    ]
+  }
+];
+
 // ─── In-memory hotel cache & reservations ───
-let hotelsCache = [];
+let hotelsCache = [...VERIFIED_CORE_STAYS];
 let reservationsCache = [];
-let isLoaded = false;
+let isLoaded = true;
 
 // Helper to generate slug ID
 function slugify(text) {
@@ -271,7 +296,7 @@ function loadHotelData() {
         }
       })
       .on('end', async () => {
-        hotelsCache = hotels;
+        hotelsCache = [...VERIFIED_CORE_STAYS, ...hotels];
         isLoaded = true;
         console.log(`✅ Hotel dataset loaded: ${hotels.length} stays (${hotels.filter(h => h.isHostel).length} hostels/dorms) across ${getAvailableCities().length} cities.`);
         try {
@@ -838,7 +863,13 @@ function createReservation(userId, data) {
   const hotel = (searchResult.hotels || []).find(h => {
     const cur = (h.name || '').toLowerCase().trim();
     return cur === targetHotelName || cur.includes(targetHotelName) || targetHotelName.includes(cur);
-  }) || (searchResult.hotels && searchResult.hotels[0]) || hotelsCache[0];
+  });
+
+  if (!hotel) {
+    const err = new Error(`Hotel '${data.hotelName}' not found or does not exist in our directory.`);
+    err.statusCode = 404;
+    throw err;
+  }
 
   let totalCapacity = 10;
   let resolvedRoomName = data.roomType || 'Standard';

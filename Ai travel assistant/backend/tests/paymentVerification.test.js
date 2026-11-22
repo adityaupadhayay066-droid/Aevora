@@ -2,7 +2,7 @@
 const assert = require('assert');
 const crypto = require('crypto');
 const { createTransaction, handlePaymentWebhook, processRefund, PAYMENT_STATUSES } = require('../controllers/paymentController');
-const { createReservation } = require('../services/hotelService');
+const { createReservation, loadHotelData } = require('../services/hotelService');
 const { Booking, Transaction, PaymentLog } = require('../models');
 
 async function runPaymentVerificationTests() {
@@ -28,6 +28,8 @@ async function runPaymentVerificationTests() {
   const webhookSecret = 'test_webhook_gateway_secret_key_32chars!';
   process.env.PAYMENT_GATEWAY_WEBHOOK_SECRET = webhookSecret;
   process.env.PAYMENT_GATEWAY_SECRET = webhookSecret;
+
+  await loadHotelData();
 
   // Mock DB storage
   const mockBookings = {

@@ -1,4 +1,4 @@
-const { authenticateApiKey, recordUsage } = require('../services/apiKeyService');
+const { authenticateApiKey, recordUsage, refundQuota } = require('../services/apiKeyService');
 
 /**
  * Middleware for authenticating B2B API Key requests
@@ -71,10 +71,14 @@ const requireApiKey = async (req, res, next) => {
     res.setHeader('X-RateLimit-Remaining', Math.max(0, apiKey.rate_limit_per_minute - (rateCheck?.currentCount || 1)));
     res.setHeader('X-Plan-Tier', organization.plan_tier);
 
-    // Track usage telemetry upon completion (quota has already been atomically deducted)
+    // Track usage telemetry upon completion (refund quota if request failed or downstream unavailable)
     res.on('finish', () => {
       const durationMs = Date.now() - startTime;
       const ipAddress = req.ip || '127.0.0.1';
+
+      if (res.statusCode >= 400) {
+        refundQuota(organization.id);
+      }
 
       recordUsage({
         orgId: organization.id,
@@ -83,7 +87,7 @@ const requireApiKey = async (req, res, next) => {
         method: req.method,
         statusCode: res.statusCode,
         responseTimeMs: durationMs,
-        tokensUsed: 1,
+        tokensUsed: res.statusCode >= 400 ? 0 : 1,
         ipAddress: typeof ipAddress === 'string' ? ipAddress.split(',')[0].trim() : null
       });
     });

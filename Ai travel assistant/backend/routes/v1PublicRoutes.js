@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireApiKey } = require('../middleware/apiKeyMiddleware');
 const aiService = require('../services/aiService');
+const { Station, Train } = require('../models');
 
 // All endpoints in this router are secured with X-API-Key and metered for billing
 router.use(requireApiKey);
@@ -39,6 +40,20 @@ router.post('/predict-delay', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing required field: train_number' });
     }
 
+    // Verify train number exists in official train directory
+    const trainRecord = await Train.findOne({ where: { train_number: String(trainNumber).trim() } });
+    if (!trainRecord) {
+      return res.status(400).json({ success: false, error: `Train #${trainNumber} not found in official directory.` });
+    }
+
+    // Verify station code if provided
+    if (stationCode) {
+      const stationRecord = await Station.findOne({ where: { station_code: String(stationCode).trim().toUpperCase() } });
+      if (!stationRecord) {
+        return res.status(400).json({ success: false, error: `Station '${stationCode}' not found in official station directory.` });
+      }
+    }
+
     const route = req.body.route || (stationCode ? `${stationCode}-NEXT` : 'ALL');
     const weather = req.body.weather || 'Clear';
     const dayOfWeek = parseInt(req.body.day_of_week || req.body.dayOfWeek) || currentDayOfWeek;
@@ -55,6 +70,14 @@ router.post('/predict-delay', async (req, res) => {
     };
 
     const prediction = await aiService.predictDelay(payload);
+    if (prediction && prediction.fallback) {
+      return res.status(503).json({
+        success: false,
+        error: 'AI prediction service temporarily unavailable. Circuit breaker open or service degraded.',
+        code: 'AI_SERVICE_UNAVAILABLE'
+      });
+    }
+
     return res.status(200).json({
       success: true,
       data: prediction
@@ -82,9 +105,25 @@ router.post('/predict-fare', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing required fields: source, destination' });
     }
 
+    const srcCode = String(source).trim().toUpperCase();
+    const dstCode = String(destination).trim().toUpperCase();
+
+    // Verify stations exist in official directory
+    const [srcStn, dstStn] = await Promise.all([
+      Station.findOne({ where: { station_code: srcCode } }),
+      Station.findOne({ where: { station_code: dstCode } })
+    ]);
+
+    if (!srcStn) {
+      return res.status(400).json({ success: false, error: `Source station '${source}' not found in official station directory.` });
+    }
+    if (!dstStn) {
+      return res.status(400).json({ success: false, error: `Destination station '${destination}' not found in official station directory.` });
+    }
+
     const payload = {
-      source: String(source).toUpperCase(),
-      destination: String(destination).toUpperCase(),
+      source: srcCode,
+      destination: dstCode,
       class_code: travelClass,
       month: parseInt(req.body.month) || currentMonth,
       season_code: parseInt(req.body.season_code || req.body.seasonCode) || currentSeason,
@@ -93,6 +132,14 @@ router.post('/predict-fare', async (req, res) => {
     };
 
     const forecast = await aiService.predictFare(payload);
+    if (forecast && forecast.fallback) {
+      return res.status(503).json({
+        success: false,
+        error: 'AI prediction service temporarily unavailable. Circuit breaker open or service degraded.',
+        code: 'AI_SERVICE_UNAVAILABLE'
+      });
+    }
+
     return res.status(200).json({
       success: true,
       data: forecast
@@ -119,6 +166,20 @@ router.post('/predict-crowd', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Must provide either station_code or train_number' });
     }
 
+    if (stationCode) {
+      const stn = await Station.findOne({ where: { station_code: String(stationCode).trim().toUpperCase() } });
+      if (!stn) {
+        return res.status(400).json({ success: false, error: `Station '${stationCode}' not found in official station directory.` });
+      }
+    }
+
+    if (trainNumber) {
+      const tr = await Train.findOne({ where: { train_number: String(trainNumber).trim() } });
+      if (!tr) {
+        return res.status(400).json({ success: false, error: `Train #${trainNumber} not found in official directory.` });
+      }
+    }
+
     const payload = {
       station_code: String(stationCode || 'NDLS').toUpperCase(),
       day_of_week: parseInt(req.body.day_of_week || req.body.dayOfWeek) || currentDayOfWeek,
@@ -126,6 +187,14 @@ router.post('/predict-crowd', async (req, res) => {
     };
 
     const prediction = await aiService.predictCrowd(payload);
+    if (prediction && prediction.fallback) {
+      return res.status(503).json({
+        success: false,
+        error: 'AI prediction service temporarily unavailable. Circuit breaker open or service degraded.',
+        code: 'AI_SERVICE_UNAVAILABLE'
+      });
+    }
+
     return res.status(200).json({
       success: true,
       data: prediction

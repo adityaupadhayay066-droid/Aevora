@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, adminProtect, optionalProtect } = require('../middleware/authMiddleware');
+const { sosLimiter } = require('../middleware/rateLimiter');
 const {
     getLoginHistory,
     getActiveSessions,
@@ -32,7 +33,7 @@ router.post('/trusted-devices', protect, markDeviceAsTrusted);
 
 router.get('/alerts', protect, getSecurityAlerts);
 router.post('/alerts/:alertId/resolve', protect, resolveAlert);
-router.post('/sos', optionalProtect, triggerSOS);
+router.post('/sos', sosLimiter, optionalProtect, triggerSOS);
 
 // Anti-Scraping / Bot Protection Controls (Admin authorization required)
 router.get('/anti-scraping/stats', adminProtect, getScrapingSecurityOverview);

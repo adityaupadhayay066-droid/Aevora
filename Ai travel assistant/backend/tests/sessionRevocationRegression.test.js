@@ -199,6 +199,7 @@ async function runSessionRevocationRegressionTests() {
   if (failed > 0) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runSessionRevocationRegressionTests().catch(err => {

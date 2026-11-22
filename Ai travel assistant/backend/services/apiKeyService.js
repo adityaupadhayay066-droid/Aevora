@@ -192,11 +192,27 @@ async function recordUsage({ orgId, apiKeyId, endpoint, method, statusCode, resp
   }
 }
 
+/**
+ * Refund deducted quota if downstream service failed or input was invalid
+ */
+async function refundQuota(orgId) {
+  if (!orgId) return;
+  try {
+    await Organization.update(
+      { used_quota: literal('GREATEST(0, used_quota - 1)') },
+      { where: { id: orgId } }
+    );
+  } catch (err) {
+    console.error('[apiKeyService:refundQuota Error]:', err.message);
+  }
+}
+
 module.exports = {
   PLAN_CONFIGS,
   generateKeySecret,
   hashApiKey,
   authenticateApiKey,
   recordUsage,
+  refundQuota,
   checkKeyRateLimit
 };

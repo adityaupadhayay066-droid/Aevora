@@ -448,7 +448,56 @@ const handlePaymentWebhook = async (req, res) => {
 
     // Parse payload fields (supports flat format and standard webhook structures)
     const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const paymentEntity = payload.payload?.payment?.entity || {};
+    const eventType = payload.event || payload.event_type || payload.type;
+    const paymentEntity = payload.payload?.payment?.entity || payload.payment || {};
+    const refundEntity = payload.payload?.refund?.entity || payload.refund || {};
+
+    // 1. Explicit Webhook Event Type Handling
+    // 1a. Handle refund events safely without confirming bookings
+    if (eventType === 'refund.processed' || eventType === 'refund.created') {
+      const refundBookingId = payload.booking_id || refundEntity.notes?.booking_id || paymentEntity.notes?.booking_id;
+      if (refundBookingId) {
+        await sequelize.transaction(async (t) => {
+          await Booking.update(
+            { payment_status: 'Refunded', booking_status: 'Cancelled' },
+            { where: { id: refundBookingId }, transaction: t }
+          );
+          await Transaction.update(
+            { status: PAYMENT_STATUSES.REFUNDED },
+            { where: { booking_id: refundBookingId }, transaction: t }
+          );
+        });
+      }
+      return res.status(200).json({ message: 'Refund webhook acknowledged and processed.' });
+    }
+
+    // 1b. Handle payment.failed safely without confirming bookings
+    if (eventType === 'payment.failed') {
+      const failedBookingId = payload.booking_id || paymentEntity.notes?.booking_id;
+      if (failedBookingId) {
+        await Transaction.update(
+          { status: 'Failed' },
+          { where: { booking_id: failedBookingId, status: 'Pending' } }
+        );
+      }
+      return res.status(200).json({ message: 'Payment failure webhook recorded; booking remains unpaid.' });
+    }
+
+    // 1c. Strict Event Filter: Process ONLY payment.captured and order.paid
+    const allowedEvents = ['payment.captured', 'order.paid'];
+    if (eventType && !allowedEvents.includes(eventType)) {
+      return res.status(400).json({
+        message: `Unsupported or unverified event type: ${eventType}. Only payment.captured and order.paid are processed for booking confirmation.`
+      });
+    }
+
+    // 1d. Strict Entity Status Filter: require entity status to be 'captured'
+    const entityStatus = paymentEntity.status || payload.status;
+    if (entityStatus && entityStatus !== 'captured' && eventType !== 'order.paid') {
+      return res.status(400).json({
+        message: `Payment entity status is '${entityStatus}', not 'captured'. Booking cannot be confirmed.`
+      });
+    }
 
     const event_id = payload.event_id || payload.id || (paymentEntity.id ? `evt_${paymentEntity.id}` : null);
     const booking_id = payload.booking_id || paymentEntity.notes?.booking_id;
@@ -801,170 +850,214 @@ async function computeCancellationRefund(booking, paidAmount) {
   return { refundAmount, cancellationCharge, policyTier, hoursBeforeDeparture };
 }
 
+const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }) => {
+  if (!booking_id) {
+    const err = new Error('booking_id is required.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const booking = await Booking.findByPk(booking_id);
+  if (!booking) {
+    const err = new Error('Booking not found.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (userId && booking.user_id !== userId && role !== 'admin' && adminRole !== 'super_admin') {
+    const err = new Error('Forbidden: You do not own this booking.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // Rule: Duplicate refund check
+  if (booking.payment_status === 'Refunded') {
+    const err = new Error('Duplicate refund: This payment has already been refunded.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Rule: Never report a refund as completed unless the booking was actually PAID or in Refund Pending
+  if (booking.payment_status !== 'Paid' && booking.payment_status !== 'Refund Pending') {
+    const err = new Error('Cannot process refund: No successful payment exists for this booking. Current status: ' + booking.payment_status);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Phase 1: Fast atomic DB transaction to claim the refund intent and release locks instantly
+  const claimResult = await sequelize.transaction(async (t) => {
+    const lockedBooking = await Booking.findByPk(booking_id, { lock: t.LOCK.UPDATE, transaction: t });
+    if (!lockedBooking) {
+      const err = new Error('BOOKING_NOT_FOUND');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (lockedBooking.payment_status === 'Refunded') {
+      const err = new Error('ALREADY_REFUNDED');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const transaction = await Transaction.findOne({
+      where: { 
+        booking_id, 
+        status: [PAYMENT_STATUSES.SUCCESS, PAYMENT_STATUSES.REFUND_PENDING] 
+      },
+      lock: t.LOCK.UPDATE,
+      transaction: t
+    });
+
+    if (!transaction) {
+      const err = new Error('NO_SUCCESSFUL_TRANSACTION');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (transaction.status === PAYMENT_STATUSES.REFUNDED) {
+      const err = new Error('ALREADY_REFUNDED');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // Anti-race condition: If already actively in flight with gateway or completed, reject concurrent duplicate
+    if (transaction.status === PAYMENT_STATUSES.REFUND_PENDING && transaction.refund_id) {
+      const err = new Error('ALREADY_REFUNDED');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const refundCalc = await computeCancellationRefund(lockedBooking, transaction.amount);
+    const refundAmount = refundCalc.refundAmount;
+
+    // Atomically claim the refund in progress
+    lockedBooking.payment_status = 'Refund Pending';
+    lockedBooking.booking_status = 'Cancelled';
+    await lockedBooking.save({ transaction: t });
+
+    transaction.status = PAYMENT_STATUSES.REFUND_PENDING;
+    await transaction.save({ transaction: t });
+
+    return {
+      transactionId: transaction.id,
+      paymentId: transaction.payment_id,
+      paymentMethod: transaction.payment_method,
+      refundAmount,
+      cancellationCharge: refundCalc.cancellationCharge,
+      policyTier: refundCalc.policyTier
+    };
+  });
+
+  // Phase 2: Gateway Network Call OUTSIDE database transaction (releases pool connection completely)
+  const hasLiveGateway = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+  let refundId = null;
+  let isSimulated = !hasLiveGateway || !claimResult.paymentId?.startsWith('pay_');
+
+  if (claimResult.refundAmount > 0 && hasLiveGateway && claimResult.paymentId?.startsWith('pay_')) {
+    try {
+      const authHeader = 'Basic ' + Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
+      const refundResponse = await axios.post(
+        `https://api.razorpay.com/v1/payments/${claimResult.paymentId}/refund`,
+        {
+          amount: Math.round(claimResult.refundAmount * 100),
+          speed: 'optimum',
+          notes: { booking_id: String(booking_id), reason: reason || 'Customer requested refund', policy_tier: claimResult.policyTier }
+        },
+        {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
+      refundId = refundResponse.data?.id;
+      isSimulated = false;
+    } catch (gwErr) {
+      console.error('[Gateway Refund API Failed]:', gwErr.response?.data || gwErr.message);
+      // Rollback state back to Paid / Confirmed on gateway rejection so user/operator can retry
+      try {
+        await sequelize.transaction(async (tRevert) => {
+          await Booking.update({ payment_status: 'Paid', booking_status: 'Confirmed' }, { where: { id: booking_id }, transaction: tRevert });
+          await Transaction.update({ status: PAYMENT_STATUSES.SUCCESS }, { where: { id: claimResult.transactionId }, transaction: tRevert });
+        });
+      } catch (revErr) {
+        logger.error({ error: revErr.message }, '[Refund Rollback Error]: Failed to revert state');
+      }
+      const gwDesc = gwErr.response?.data?.error?.description || gwErr.message;
+      const gwError = new Error('GATEWAY_REFUND_FAILED: ' + gwDesc);
+      gwError.statusCode = 502;
+      gwError.gatewayError = gwDesc;
+      throw gwError;
+    }
+  }
+
+  if (!refundId) {
+    refundId = `rfnd_sim_${crypto.randomBytes(10).toString('hex')}`;
+  }
+
+  // Phase 3: Finalize state in a short atomic DB transaction
+  await sequelize.transaction(async (tFinal) => {
+    await Transaction.update({
+      status: PAYMENT_STATUSES.REFUNDED,
+      refund_id: refundId,
+      refund_amount: claimResult.refundAmount
+    }, {
+      where: { id: claimResult.transactionId },
+      transaction: tFinal
+    });
+
+    await Booking.update({
+      payment_status: 'Refunded',
+      booking_status: 'Cancelled'
+    }, {
+      where: { id: booking_id },
+      transaction: tFinal
+    });
+
+    await PaymentLog.create({
+      user_id: userId || booking.user_id,
+      event_type: isSimulated ? 'SIMULATED_REFUND_COMPLETED' : 'REFUND_COMPLETED',
+      payment_method: claimResult.paymentMethod,
+      details: reason || `Refund processed for booking #${booking_id}: ₹${claimResult.refundAmount} refunded, ₹${claimResult.cancellationCharge} cancellation fee (${claimResult.policyTier}) (Refund ID: ${refundId}${isSimulated ? ' - Simulated' : ''})`
+    }, { transaction: tFinal });
+  });
+
+  return {
+    message: isSimulated
+      ? 'Refund registered in simulation sandbox mode (no live gateway configured).'
+      : 'Refund successfully verified and completed with payment gateway.',
+    status: PAYMENT_STATUSES.REFUNDED,
+    refund_id: refundId,
+    booking_id,
+    refund_amount: claimResult.refundAmount,
+    cancellation_charge: claimResult.cancellationCharge,
+    policy_tier: claimResult.policyTier,
+    simulated: isSimulated,
+    gateway_confirmed: !isSimulated
+  };
+};
+
 const processRefund = async (req, res) => {
   try {
     const { booking_id, reason } = req.body;
-    if (!booking_id) {
-      return res.status(400).json({ message: 'booking_id is required.' });
-    }
-
-    const booking = await Booking.findByPk(booking_id);
-    if (!booking) {
-      return res.status(404).json({ message: 'Booking not found.' });
-    }
-
-    if (booking.user_id !== req.user.id && req.user.role !== 'admin' && req.user.admin_role !== 'super_admin') {
-      return res.status(403).json({ message: 'Forbidden: You do not own this booking.' });
-    }
-
-    // Rule: Duplicate refund check
-    if (booking.payment_status === 'Refunded') {
-      return res.status(400).json({
-        message: 'Duplicate refund: This payment has already been refunded.'
-      });
-    }
-
-    // Rule: Never report a refund as completed unless the booking was actually PAID
-    if (booking.payment_status !== 'Paid' && booking.payment_status !== 'Refund Pending') {
-      return res.status(400).json({
-        message: 'Cannot process refund: No successful payment exists for this booking. Current status: ' + booking.payment_status
-      });
-    }
-
-    // Phase 1: Fast atomic DB transaction to claim the refund intent and release locks instantly
-    const claimResult = await sequelize.transaction(async (t) => {
-      const lockedBooking = await Booking.findByPk(booking_id, { lock: t.LOCK.UPDATE, transaction: t });
-      if (!lockedBooking) {
-        throw new Error('BOOKING_NOT_FOUND');
-      }
-      if (lockedBooking.payment_status === 'Refunded') {
-        throw new Error('ALREADY_REFUNDED');
-      }
-      if (lockedBooking.payment_status === 'Refund Pending' && lockedBooking.booking_status !== 'Expired') {
-        throw new Error('ALREADY_REFUNDED');
-      }
-
-      const transaction = await Transaction.findOne({
-        where: { 
-          booking_id, 
-          status: [PAYMENT_STATUSES.SUCCESS, PAYMENT_STATUSES.REFUND_PENDING] 
-        },
-        lock: t.LOCK.UPDATE,
-        transaction: t
-      });
-
-      if (!transaction) {
-        throw new Error('NO_SUCCESSFUL_TRANSACTION');
-      }
-
-      if (transaction.status === PAYMENT_STATUSES.REFUNDED) {
-        throw new Error('ALREADY_REFUNDED');
-      }
-
-      const refundCalc = await computeCancellationRefund(lockedBooking, transaction.amount);
-      const refundAmount = refundCalc.refundAmount;
-
-      // Atomically claim the refund in progress
-      lockedBooking.payment_status = 'Refund Pending';
-      lockedBooking.booking_status = 'Cancelled';
-      await lockedBooking.save({ transaction: t });
-
-      transaction.status = PAYMENT_STATUSES.REFUND_PENDING;
-      await transaction.save({ transaction: t });
-
-      return {
-        transactionId: transaction.id,
-        paymentId: transaction.payment_id,
-        paymentMethod: transaction.payment_method,
-        refundAmount,
-        cancellationCharge: refundCalc.cancellationCharge,
-        policyTier: refundCalc.policyTier
-      };
-    });
-
-    // Phase 2: Gateway Network Call OUTSIDE database transaction (releases pool connection completely)
-    const hasLiveGateway = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
-    let refundId = null;
-    let isSimulated = !hasLiveGateway || !claimResult.paymentId?.startsWith('pay_');
-
-    if (claimResult.refundAmount > 0 && hasLiveGateway && claimResult.paymentId?.startsWith('pay_')) {
-      try {
-        const authHeader = 'Basic ' + Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
-        const refundResponse = await axios.post(
-          `https://api.razorpay.com/v1/payments/${claimResult.paymentId}/refund`,
-          {
-            amount: Math.round(claimResult.refundAmount * 100),
-            speed: 'optimum',
-            notes: { booking_id: String(booking_id), reason: reason || 'Customer requested refund', policy_tier: claimResult.policyTier }
-          },
-          {
-            headers: {
-              'Authorization': authHeader,
-              'Content-Type': 'application/json'
-            },
-            timeout: 10000
-          }
-        );
-        refundId = refundResponse.data?.id;
-        isSimulated = false;
-      } catch (gwErr) {
-        console.error('[Gateway Refund API Failed]:', gwErr.response?.data || gwErr.message);
-        // Rollback state back to Paid on gateway rejection
-        try {
-          await sequelize.transaction(async (tRevert) => {
-            await Booking.update({ payment_status: 'Paid', booking_status: 'Confirmed' }, { where: { id: booking_id }, transaction: tRevert });
-            await Transaction.update({ status: PAYMENT_STATUSES.SUCCESS }, { where: { id: claimResult.transactionId }, transaction: tRevert });
-          });
-        } catch (_) {}
-        throw new Error('GATEWAY_REFUND_FAILED: ' + (gwErr.response?.data?.error?.description || gwErr.message));
-      }
-    }
-
-    if (!refundId) {
-      refundId = `rfnd_sim_${crypto.randomBytes(10).toString('hex')}`;
-    }
-
-    // Phase 3: Finalize state in a short atomic DB transaction
-    await sequelize.transaction(async (tFinal) => {
-      await Transaction.update({
-        status: PAYMENT_STATUSES.REFUNDED,
-        refund_id: refundId,
-        refund_amount: claimResult.refundAmount
-      }, {
-        where: { id: claimResult.transactionId },
-        transaction: tFinal
-      });
-
-      await Booking.update({
-        payment_status: 'Refunded',
-        booking_status: 'Cancelled'
-      }, {
-        where: { id: booking_id },
-        transaction: tFinal
-      });
-
-      await PaymentLog.create({
-        user_id: req.user.id,
-        event_type: isSimulated ? 'SIMULATED_REFUND_COMPLETED' : 'REFUND_COMPLETED',
-        payment_method: claimResult.paymentMethod,
-        details: reason || `Refund processed for booking #${booking_id}: ₹${claimResult.refundAmount} refunded, ₹${claimResult.cancellationCharge} cancellation fee (${claimResult.policyTier}) (Refund ID: ${refundId}${isSimulated ? ' - Simulated' : ''})`
-      }, { transaction: tFinal });
-    });
-
-    return res.status(200).json({
-      message: isSimulated
-        ? 'Refund registered in simulation sandbox mode (no live gateway configured).'
-        : 'Refund successfully verified and completed with payment gateway.',
-      status: PAYMENT_STATUSES.REFUNDED,
-      refund_id: refundId,
+    const result = await executeRefundCore({
       booking_id,
-      refund_amount: claimResult.refundAmount,
-      cancellation_charge: claimResult.cancellationCharge,
-      policy_tier: claimResult.policyTier,
-      simulated: isSimulated,
-      gateway_confirmed: !isSimulated
+      userId: req.user?.id,
+      role: req.user?.role,
+      adminRole: req.user?.admin_role,
+      reason
     });
+    return res.status(200).json(result);
   } catch (error) {
+    if (error.statusCode === 502 || error.message.startsWith('GATEWAY_REFUND_FAILED')) {
+      return res.status(502).json({
+        message: 'Payment gateway rejected refund request. Booking has been restored to Paid / Confirmed.',
+        error: error.gatewayError || error.message
+      });
+    }
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     if (error.message === 'ALREADY_REFUNDED') {
       return res.status(400).json({ message: 'Duplicate refund: This payment has already been refunded.' });
     }
@@ -1485,6 +1578,7 @@ module.exports = {
   createTransaction,
   handlePaymentWebhook,
   processRefund,
+  executeRefundCore,
   computeCancellationRefund,
   getPaymentStatus,
   getReceiptPDF,

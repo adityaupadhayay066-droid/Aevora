@@ -1005,6 +1005,11 @@ class MultiModalRoutingEngine {
         const transferInfo = resolveClusterTransfer(hub.code, hubStation);
 
         for (const leg1 of leg1Candidates) {
+          // Check operating schedule: Leg 1 must operate on safeDate
+          if (leg1.mode === 'Train' && !trainRunsOnDate(leg1, safeDate)) {
+            continue;
+          }
+
           for (const leg2 of leg2Candidates) {
             // Absolute ISO-8601 UTC timestamp calculation
             const leg1DepIso = buildIsoUtcTimestamp(safeDate, leg1.dep_time, 0);
@@ -1019,6 +1024,17 @@ class MultiModalRoutingEngine {
             if (new Date(leg2DepIso).getTime() <= new Date(leg1ArrIso).getTime()) {
               leg2BaseDayOffset += 1;
               leg2DepIso = buildIsoUtcTimestamp(safeDate, leg2.dep_time, leg2BaseDayOffset);
+            }
+
+            // Strictly enforce chronological order: Leg 2 MUST depart after Leg 1 arrives
+            if (new Date(leg2DepIso).getTime() <= new Date(leg1ArrIso).getTime()) {
+              continue;
+            }
+
+            // Check operating schedule: Leg 2 must operate on its departure calendar date
+            const leg2CalDate = new Date(new Date(safeDate).getTime() + leg2BaseDayOffset * 86400000).toISOString().split('T')[0];
+            if (leg2.mode === 'Train' && !trainRunsOnDate(leg2, leg2CalDate)) {
+              continue;
             }
 
             // Connection window buffer evaluation

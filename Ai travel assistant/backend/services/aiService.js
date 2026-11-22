@@ -116,7 +116,7 @@ const predictDelay = async (delayData = {}) => {
         expected_arrival_delay_mins: arrDelay,
         expected_departure_delay_mins: depDelay,
         delay_probability: prob,
-        confidence: 88.0,
+        confidence: null,
         fallback: true
     };
 };

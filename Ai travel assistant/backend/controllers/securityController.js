@@ -516,6 +516,16 @@ const markDeviceAsTrusted = async (req, res) => {
     }
 };
 
+function escapeHtml(value) {
+    if (value == null) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 const triggerSOS = async (req, res) => {
     const { latitude, longitude, emergency_type = 'General', location_name, note } = req.body;
     try {
@@ -548,19 +558,26 @@ const triggerSOS = async (req, res) => {
 
         console.log(`[SOS ALARM] Passenger (${passengerName} / ${passengerEmail}) triggered SOS at [${latitude}, ${longitude}] (${locDesc}). Dispatching RPF Responder...`);
 
-        // Trigger dynamic notification to administrator
+        // Trigger dynamic notification to administrator with strict HTML sanitization
+        const safePassengerName = escapeHtml(passengerName);
+        const safePassengerEmail = escapeHtml(passengerEmail);
+        const safeEmergencyType = escapeHtml(emergency_type);
+        const safeLocDesc = escapeHtml(locDesc);
+        const safeNote = note ? escapeHtml(note) : '';
+        const safeCoords = latitude && longitude ? `${escapeHtml(latitude)}, ${escapeHtml(longitude)}` : 'Unknown';
+
         sendEmail({
             to: process.env.ADMIN_ALERT_EMAIL || 'admin@traveliq.com',
             subject: '⚠️ CRITICAL ALARM: Passenger SOS Emergency Dispatched',
             html: `
                 <h3>⚠️ CRITICAL EMERGENCY SYSTEM ALERT</h3>
                 <p><strong>Incident Reference:</strong> AEV-SOS-${alert.id}</p>
-                <p><strong>Passenger Name:</strong> ${passengerName}</p>
-                <p><strong>Email Address:</strong> ${passengerEmail}</p>
-                <p><strong>Emergency Nature:</strong> ${emergency_type}</p>
-                <p><strong>Reported Location:</strong> ${locDesc}</p>
-                <p><strong>Locked GPS Coordinates:</strong> ${latitude && longitude ? `${latitude}, ${longitude}` : 'Unknown'}</p>
-                ${note ? `<p><strong>Passenger Note / Coach / Berth:</strong> ${note}</p>` : ''}
+                <p><strong>Passenger Name:</strong> ${safePassengerName}</p>
+                <p><strong>Email Address:</strong> ${safePassengerEmail}</p>
+                <p><strong>Emergency Nature:</strong> ${safeEmergencyType}</p>
+                <p><strong>Reported Location:</strong> ${safeLocDesc}</p>
+                <p><strong>Locked GPS Coordinates:</strong> ${safeCoords}</p>
+                ${safeNote ? `<p><strong>Passenger Note / Coach / Berth:</strong> ${safeNote}</p>` : ''}
                 <p><strong>Dispatched Team:</strong> Railway Protection Force (RPF) Responder Team Locked.</p>
                 <p>Please log in to the TravelIQ Administration Panel immediately to track GIS telemetry.</p>
             `
