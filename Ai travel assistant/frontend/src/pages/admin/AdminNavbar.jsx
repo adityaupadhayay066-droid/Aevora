@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    Search, Bell, Moon, Sun, Monitor, Menu, 
+    Search, Bell, Menu, 
     CheckCheck, AlertCircle, ShieldAlert, Sparkles, Database, ExternalLink 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import UserAvatar from './UserAvatar';
 import adminApi from '../../utils/adminApi';
 
@@ -14,7 +13,6 @@ export default function AdminNavbar({
     onOpenMobileSidebar
 }) {
     const { user } = useAuth();
-    const { theme, effectiveTheme, setTheme } = useTheme();
     const navigate = useNavigate();
 
     const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -233,16 +231,6 @@ export default function AdminNavbar({
                         </div>
                     )}
                 </div>
-
-                {/* Theme Toggle */}
-                <button
-                    onClick={() => setTheme(effectiveTheme === 'dark' ? 'light' : 'dark')}
-                    className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-soft)] border border-[var(--color-border)] transition"
-                    title={`Switch to ${effectiveTheme === 'dark' ? 'Light' : 'Dark'} mode`}
-                    aria-label="Toggle theme"
-                >
-                    {effectiveTheme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
-                </button>
 
                 {/* User Portal Link */}
                 <button

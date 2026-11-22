@@ -8,7 +8,7 @@ import { BRAND } from '../../config/branding';
  */
 export const Logo = ({
   variant = 'full',      // 'full' | 'icon' | 'wordmark' | 'badge'
-  theme = 'auto',        // 'auto' | 'dark' | 'light'
+  theme = 'dark',        // 'dark' (exclusive default)
   size = 'md',           // 'sm' | 'md' | 'lg' | 'xl'
   withTagline = false,
   to = '/',

@@ -420,7 +420,7 @@ export default function ProfilePage() {
           className="bg-[#FFFFFF] dark:bg-[#1B242E] border border-[#E3E7EA] dark:border-[#293644] rounded-xl divide-y divide-[#E3E7EA] dark:divide-[#293644] shadow-[0_4px_16px_rgba(23,63,58,0.06)]">
           {[
             { label: 'My Trips', desc: 'View your travel history', href: '/dashboard/my-trips', icon: TrendingUp },
-            { label: 'Account Settings', desc: 'Password, theme, security', href: '/dashboard/settings', icon: Shield },
+            { label: 'Account Settings', desc: 'Password, security', href: '/dashboard/settings', icon: Shield },
           ].map((item, i) => (
             <a key={i} href={item.href} className="flex items-center justify-between p-4 hover:bg-[#F7F8FA] dark:hover:bg-[#121921] transition-colors group rounded-xl">
               <div className="flex items-center gap-3">

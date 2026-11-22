@@ -212,20 +212,15 @@ const changePassword = async (req, res) => {
   }
 };
 
-// PUT /api/profile/theme — Update theme preference
+// PUT /api/profile/theme — Update theme preference (Exclusive Dark Theme)
 const updateTheme = async (req, res) => {
   try {
-    const { theme } = req.body;
-    if (!['dark', 'light', 'system'].includes(theme)) {
-      return res.status(400).json({ message: 'Invalid theme. Use: dark, light, or system' });
-    }
-
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.theme_preference = theme;
+    user.theme_preference = 'dark';
     await user.save();
-    res.json({ message: 'Theme updated', theme });
+    res.json({ message: 'Theme set to dark mode (exclusive default)', theme: 'dark' });
   } catch (error) {
     console.error('Update theme error:', error);
     res.status(500).json({ message: 'Error updating theme' });

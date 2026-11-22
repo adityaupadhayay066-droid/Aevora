@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  User, Settings, LogOut, Menu, X, Sun, Moon, Sparkles, Train, 
+  User, Settings, LogOut, Menu, X, Sparkles, Train, 
   Compass, Utensils, MapPin, Building2, Navigation, Leaf, Brain, 
   Bot, Mic, Globe2, BarChart3, Network, Cpu, ChevronDown, ChevronRight, 
   Search, Bell, ArrowRight, Check, Shield, ShieldAlert, HelpCircle, Key, Plane, Bus,
@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import Logo from './brand/Logo';
 import EmergencySOSModal from './EmergencySOSModal';
 
@@ -99,7 +98,6 @@ const NOTIFICATIONS = [
 
 export default function Navbar() {
   const { user, logout, openAuthModal } = useAuth();
-  const { effectiveTheme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -440,15 +438,6 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             )}
-
-            {/* Theme Toggle (Sun/Moon) */}
-            <button
-              onClick={() => setTheme(effectiveTheme === 'dark' ? 'light' : 'dark')}
-              className="w-8.5 h-8.5 flex items-center justify-center rounded-lg text-[#66737D] dark:text-[#9CAAB5] hover:bg-[#EEF2F4] dark:hover:bg-[#162029] transition-colors cursor-pointer"
-              title={`Switch to ${effectiveTheme === 'dark' ? 'light' : 'dark'} mode`}
-            >
-              {effectiveTheme === 'dark' ? <Sun className="w-4 h-4 text-[#C87E58]" /> : <Moon className="w-4 h-4 text-[#66737D]" />}
-            </button>
 
             {/* Emergency SOS Button */}
             <button

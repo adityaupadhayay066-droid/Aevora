@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Eye, EyeOff, Sun, Moon, Monitor, Shield, Trash2, Pause, AlertTriangle, Loader2, ChevronRight, LogOut, User, Clock } from 'lucide-react';
+import { Lock, Eye, EyeOff, Shield, Trash2, Pause, AlertTriangle, Loader2, ChevronRight, LogOut, User, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { api, getBackendBaseURL } from '../utils/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -21,29 +20,8 @@ function SectionCard({ title, icon: Icon, children, delay = 0 }) {
   );
 }
 
-function ThemeOption({ icon: Icon, label, value, active, onClick }) {
-  return (
-    <button onClick={onClick}
-      className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-        active 
-          ? 'border-[#244C66] dark:border-[#F0F4F7] bg-[#F0F4F7] dark:bg-[#233240]' 
-          : 'border-[#E3E7EA] dark:border-[#293644] bg-[#F7F8FA] dark:bg-[#121921] hover:border-[#263238] dark:hover:border-[#A3B0AB]'
-      }`}>
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-        active 
-          ? 'bg-[#244C66] text-white dark:bg-[#F0F4F7] dark:text-[#244C66]' 
-          : 'bg-[#FFFFFF] dark:bg-[#1B242E] text-[#66736F] dark:text-[#A3B0AB] border border-[#E3E7EA] dark:border-[#293644]'
-      }`}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <span className={`text-xs font-medium ${active ? 'text-[#244C66] dark:text-[#F0F4F7]' : 'text-[#66736F] dark:text-[#A3B0AB]'}`}>{label}</span>
-    </button>
-  );
-}
-
 export default function SettingsPage() {
   const { user, logout, sessionTimeoutMinutes, setSessionTimeoutMinutes } = useAuth();
-  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   // Password change
@@ -129,16 +107,6 @@ export default function SettingsPage() {
             <p className="text-[#66736F] dark:text-[#A3B0AB] text-sm mt-0.5 font-inter">Manage your account preferences and security</p>
           </div>
         </motion.div>
-
-        {/* Theme */}
-        <SectionCard title="Appearance" icon={Sun} delay={0.1}>
-          <p className="text-[#66736F] dark:text-[#A3B0AB] text-xs font-inter">Choose your preferred theme</p>
-          <div className="flex gap-3">
-            <ThemeOption icon={Moon} label="Dark" value="dark" active={theme === 'dark'} onClick={() => setTheme('dark')} />
-            <ThemeOption icon={Sun} label="Light" value="light" active={theme === 'light'} onClick={() => setTheme('light')} />
-            <ThemeOption icon={Monitor} label="System" value="system" active={theme === 'system'} onClick={() => setTheme('system')} />
-          </div>
-        </SectionCard>
 
         {/* Session Security & Auto-Logout */}
         <SectionCard title="Session Security & Auto-Logout" icon={Clock} delay={0.12}>

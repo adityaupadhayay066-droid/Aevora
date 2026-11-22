@@ -48,52 +48,8 @@ html, body {
   background: rgba(163, 176, 171, 0.45);
 }
 
-/* ===== AEVORA Unified Travel Intelligence Design Tokens ===== */
+/* ===== AEVORA Unified Travel Intelligence Design Tokens (Default Dark Theme) ===== */
 :root,
-.light,
-[data-theme="light"] {
-  color-scheme: light;
-  --color-bg: #F8FAFC;
-  --color-surface: #FFFFFF;
-  --color-cream: #F1F5F9;
-  --color-primary: #0284C7;
-  --color-primary-hover: #0369A1;
-  --color-primary-light: #38BDF8;
-  --color-navy: #0B132B;
-  --color-navy-dark: #070B1A;
-  --color-cyan: #0284C7;
-  --color-teal: #38BDF8;
-  --color-teal-hover: #0284C7;
-  --color-teal-light: #BAE6FD;
-  --color-teal-subtle: #F0F9FF;
-  --color-accent: #0284C7;
-  --color-accent-hover: #0369A1;
-  --color-secondary: #64748B;
-  --color-secondary-dark: #334155;
-  --color-amber: #F59E0B;
-  --color-orange: #F97316;
-  --color-text: #0F172A;
-  --color-text-secondary: #64748B;
-  --color-text-muted: #94A3B8;
-  --color-border: #E2E8F0;
-  --color-border-light: #F1F5F9;
-  --color-soft: #F8FAFC;
-  --color-section: #F1F5F9;
-  --color-nav-selected-bg: #F0F9FF;
-  --color-nav-selected-text: #0369A1;
-  --color-danger: #EF4444;
-  --color-error: #EF4444;
-  --color-success: #10B981;
-
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: 'Sora', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
-}
-
 .dark,
 [data-theme="dark"] {
   color-scheme: dark;
@@ -130,7 +86,12 @@ html, body {
   --color-success: #34D399;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Sora', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
 }
 
 /* ===== Global Reset & Base Styling ===== */
