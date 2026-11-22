@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 // 3.5 minutes window in milliseconds (3-4 minutes)
 const THREE_TO_FOUR_MINUTES_MS = 3.5 * 60 * 1000;
@@ -9,11 +9,14 @@ const isTrustProxy = process.env.TRUST_PROXY === 'true' ||
                      (!isNaN(process.env.TRUST_PROXY) && Number(process.env.TRUST_PROXY) > 0);
 
 const getClientIp = (req) => {
+    let rawIp = '127.0.0.1';
     if (isTrustProxy) {
-        return req.ip || req.socket?.remoteAddress || '127.0.0.1';
+        rawIp = req.ip || req.socket?.remoteAddress || '127.0.0.1';
+    } else {
+        // Default: use socket address to prevent X-Forwarded-For spoofing and header rotation bypasses
+        rawIp = req.socket?.remoteAddress || req.ip || '127.0.0.1';
     }
-    // Default: use socket address to prevent X-Forwarded-For spoofing and header rotation bypasses
-    return req.socket?.remoteAddress || req.ip || '127.0.0.1';
+    return ipKeyGenerator(rawIp);
 };
 
 // Optional bypass if explicitly disabled via environment variable
