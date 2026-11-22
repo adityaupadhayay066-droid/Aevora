@@ -471,32 +471,94 @@ const DEFAULT_TRAINS = [
     },
     {
         train_number: '18183',
-        train_name: 'Tatanagar - Danapur Super Express',
+        train_name: 'Tata - Buxar Express',
         runs_on: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
         schedule: [
-            { station_code: 'TATA', arrival_time: null, departure_time: '08:15:00', day_count: 1, stop_sequence: 1 },
+            { station_code: 'TATA', arrival_time: null, departure_time: '07:55:00', day_count: 1, stop_sequence: 1 },
             { station_code: 'PRR', arrival_time: '09:28:00', departure_time: '09:30:00', day_count: 1, stop_sequence: 2 },
             { station_code: 'BKSC', arrival_time: '10:40:00', departure_time: '10:45:00', day_count: 1, stop_sequence: 3 },
             { station_code: 'GMO', arrival_time: '11:55:00', departure_time: '12:00:00', day_count: 1, stop_sequence: 4 },
             { station_code: 'KQR', arrival_time: '13:05:00', departure_time: '13:07:00', day_count: 1, stop_sequence: 5 },
             { station_code: 'GAYA', arrival_time: '14:45:00', departure_time: '14:50:00', day_count: 1, stop_sequence: 6 },
             { station_code: 'PNBE', arrival_time: '18:25:00', departure_time: '18:35:00', day_count: 1, stop_sequence: 7 },
-            { station_code: 'DNR', arrival_time: '19:00:00', departure_time: null, day_count: 1, stop_sequence: 8 }
+            { station_code: 'DNR', arrival_time: '19:00:00', departure_time: '19:05:00', day_count: 1, stop_sequence: 8 },
+            { station_code: 'ARA', arrival_time: '19:40:00', departure_time: '19:45:00', day_count: 1, stop_sequence: 9 },
+            { station_code: 'BXR', arrival_time: '20:30:00', departure_time: null, day_count: 1, stop_sequence: 10 }
         ]
     },
     {
         train_number: '18184',
-        train_name: 'Danapur - Tatanagar Super Express (Return)',
+        train_name: 'Buxar - Tata Express (Return)',
         runs_on: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
         schedule: [
-            { station_code: 'DNR', arrival_time: null, departure_time: '05:45:00', day_count: 1, stop_sequence: 1 },
-            { station_code: 'PNBE', arrival_time: '06:05:00', departure_time: '06:15:00', day_count: 1, stop_sequence: 2 },
-            { station_code: 'GAYA', arrival_time: '08:00:00', departure_time: '08:05:00', day_count: 1, stop_sequence: 3 },
-            { station_code: 'KQR', arrival_time: '09:28:00', departure_time: '09:30:00', day_count: 1, stop_sequence: 4 },
-            { station_code: 'GMO', arrival_time: '10:45:00', departure_time: '10:50:00', day_count: 1, stop_sequence: 5 },
-            { station_code: 'BKSC', arrival_time: '11:55:00', departure_time: '12:00:00', day_count: 1, stop_sequence: 6 },
-            { station_code: 'PRR', arrival_time: '13:10:00', departure_time: '13:12:00', day_count: 1, stop_sequence: 7 },
-            { station_code: 'TATA', arrival_time: '14:50:00', departure_time: null, day_count: 1, stop_sequence: 8 }
+            { station_code: 'BXR', arrival_time: null, departure_time: '04:15:00', day_count: 1, stop_sequence: 1 },
+            { station_code: 'ARA', arrival_time: '05:00:00', departure_time: '05:05:00', day_count: 1, stop_sequence: 2 },
+            { station_code: 'DNR', arrival_time: '05:45:00', departure_time: '05:50:00', day_count: 1, stop_sequence: 3 },
+            { station_code: 'PNBE', arrival_time: '06:05:00', departure_time: '06:15:00', day_count: 1, stop_sequence: 4 },
+            { station_code: 'GAYA', arrival_time: '08:00:00', departure_time: '08:05:00', day_count: 1, stop_sequence: 5 },
+            { station_code: 'KQR', arrival_time: '09:28:00', departure_time: '09:30:00', day_count: 1, stop_sequence: 6 },
+            { station_code: 'GMO', arrival_time: '10:45:00', departure_time: '10:50:00', day_count: 1, stop_sequence: 7 },
+            { station_code: 'BKSC', arrival_time: '11:55:00', departure_time: '12:00:00', day_count: 1, stop_sequence: 8 },
+            { station_code: 'PRR', arrival_time: '13:10:00', departure_time: '13:12:00', day_count: 1, stop_sequence: 9 },
+            { station_code: 'TATA', arrival_time: '14:50:00', departure_time: null, day_count: 1, stop_sequence: 10 }
+        ]
+    },
+    {
+        train_number: '13287',
+        train_name: 'South Bihar Express',
+        runs_on: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+        schedule: [
+            { station_code: 'TATA', arrival_time: null, departure_time: '18:45:00', day_count: 1, stop_sequence: 1 },
+            { station_code: 'PRR', arrival_time: '20:00:00', departure_time: '20:05:00', day_count: 1, stop_sequence: 2 },
+            { station_code: 'BKSC', arrival_time: '21:30:00', departure_time: '21:35:00', day_count: 1, stop_sequence: 3 },
+            { station_code: 'GAYA', arrival_time: '03:15:00', departure_time: '03:20:00', day_count: 2, stop_sequence: 4 },
+            { station_code: 'PNBE', arrival_time: '07:25:00', departure_time: '07:35:00', day_count: 2, stop_sequence: 5 },
+            { station_code: 'DNR', arrival_time: '08:00:00', departure_time: '08:05:00', day_count: 2, stop_sequence: 6 },
+            { station_code: 'ARA', arrival_time: '09:30:00', departure_time: null, day_count: 2, stop_sequence: 7 }
+        ]
+    },
+    {
+        train_number: '13288',
+        train_name: 'South Bihar Express (Return)',
+        runs_on: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+        schedule: [
+            { station_code: 'ARA', arrival_time: null, departure_time: '19:45:00', day_count: 1, stop_sequence: 1 },
+            { station_code: 'DNR', arrival_time: '20:25:00', departure_time: '20:30:00', day_count: 1, stop_sequence: 2 },
+            { station_code: 'PNBE', arrival_time: '20:50:00', departure_time: '21:00:00', day_count: 1, stop_sequence: 3 },
+            { station_code: 'GAYA', arrival_time: '23:30:00', departure_time: '23:35:00', day_count: 1, stop_sequence: 4 },
+            { station_code: 'BKSC', arrival_time: '04:45:00', departure_time: '04:50:00', day_count: 2, stop_sequence: 5 },
+            { station_code: 'PRR', arrival_time: '06:00:00', departure_time: '06:05:00', day_count: 2, stop_sequence: 6 },
+            { station_code: 'TATA', arrival_time: '07:35:00', departure_time: null, day_count: 2, stop_sequence: 7 }
+        ]
+    },
+    {
+        train_number: '22843',
+        train_name: 'Bilaspur - Buxar SF Express',
+        runs_on: ["SAT"],
+        schedule: [
+            { station_code: 'TATA', arrival_time: '03:40:00', departure_time: '03:50:00', day_count: 1, stop_sequence: 1 },
+            { station_code: 'PRR', arrival_time: '05:00:00', departure_time: '05:05:00', day_count: 1, stop_sequence: 2 },
+            { station_code: 'BKSC', arrival_time: '06:20:00', departure_time: '06:25:00', day_count: 1, stop_sequence: 3 },
+            { station_code: 'GAYA', arrival_time: '10:00:00', departure_time: '10:05:00', day_count: 1, stop_sequence: 4 },
+            { station_code: 'PNBE', arrival_time: '13:00:00', departure_time: '13:10:00', day_count: 1, stop_sequence: 5 },
+            { station_code: 'DNR', arrival_time: '13:30:00', departure_time: '13:35:00', day_count: 1, stop_sequence: 6 },
+            { station_code: 'ARA', arrival_time: '14:45:00', departure_time: '14:50:00', day_count: 1, stop_sequence: 7 },
+            { station_code: 'BXR', arrival_time: '15:45:00', departure_time: null, day_count: 1, stop_sequence: 8 }
+        ]
+    },
+    {
+        train_number: '08183',
+        train_name: 'Tata - Buxar Special',
+        runs_on: ["TUE"],
+        schedule: [
+            { station_code: 'TATA', arrival_time: null, departure_time: '20:30:00', day_count: 1, stop_sequence: 1 },
+            { station_code: 'PRR', arrival_time: '21:50:00', departure_time: '21:55:00', day_count: 1, stop_sequence: 2 },
+            { station_code: 'BKSC', arrival_time: '23:15:00', departure_time: '23:20:00', day_count: 1, stop_sequence: 3 },
+            { station_code: 'GAYA', arrival_time: '03:45:00', departure_time: '03:50:00', day_count: 2, stop_sequence: 4 },
+            { station_code: 'PNBE', arrival_time: '06:30:00', departure_time: '06:40:00', day_count: 2, stop_sequence: 5 },
+            { station_code: 'DNR', arrival_time: '07:00:00', departure_time: '07:05:00', day_count: 2, stop_sequence: 6 },
+            { station_code: 'ARA', arrival_time: '08:00:00', departure_time: '08:05:00', day_count: 2, stop_sequence: 7 },
+            { station_code: 'BXR', arrival_time: '09:00:00', departure_time: null, day_count: 2, stop_sequence: 8 }
         ]
     },
     {
