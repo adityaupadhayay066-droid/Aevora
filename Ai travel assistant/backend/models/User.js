@@ -15,6 +15,8 @@ function getEncryptionKey() {
 }
 const GCM_PREFIX = 'gcm:';
 const GCM_IV_LENGTH = 12; // 96-bit IV recommended for GCM
+const HEX_32_REGEX = /^[0-9a-fA-F]{32}$/;
+const HEX_REGEX = /^[0-9a-fA-F]+$/;
 
 function isGcmEncrypted(text) {
   if (typeof text !== 'string' || !text.startsWith(GCM_PREFIX)) return false;
@@ -27,46 +29,54 @@ function encrypt(text) {
   // If already encrypted with AES-256-GCM, avoid re-encrypting
   if (isGcmEncrypted(text)) return text;
 
-  const key = Buffer.from(getEncryptionKey(), 'hex');
-  const iv = crypto.randomBytes(GCM_IV_LENGTH);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-  const encrypted = Buffer.concat([cipher.update(String(text), 'utf8'), cipher.final()]);
-  const authTag = cipher.getAuthTag();
+  try {
+    const key = Buffer.from(getEncryptionKey(), 'hex');
+    const iv = crypto.randomBytes(GCM_IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const encrypted = Buffer.concat([cipher.update(String(text), 'utf8'), cipher.final()]);
+    const authTag = cipher.getAuthTag();
 
-  return `${GCM_PREFIX}${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
+    return `${GCM_PREFIX}${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
+  } catch (err) {
+    return text;
+  }
 }
 
 function decrypt(text) {
   if (!text || typeof text !== 'string') return text;
 
-  // 1. Authenticated AES-256-GCM decryption
-  if (isGcmEncrypted(text)) {
-    try {
-      const parts = text.slice(GCM_PREFIX.length).split(':');
-      const iv = Buffer.from(parts[0], 'hex');
-      const authTag = Buffer.from(parts[1], 'hex');
-      const encryptedText = Buffer.from(parts[2], 'hex');
-      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(getEncryptionKey(), 'hex'), iv);
-      decipher.setAuthTag(authTag);
-      const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
-      return decrypted.toString('utf8');
-    } catch (_gcmError) {
-      return text;
+  try {
+    // 1. Authenticated AES-256-GCM decryption
+    if (isGcmEncrypted(text)) {
+      try {
+        const parts = text.slice(GCM_PREFIX.length).split(':');
+        const iv = Buffer.from(parts[0], 'hex');
+        const authTag = Buffer.from(parts[1], 'hex');
+        const encryptedText = Buffer.from(parts[2], 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(getEncryptionKey(), 'hex'), iv);
+        decipher.setAuthTag(authTag);
+        const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+        return decrypted.toString('utf8');
+      } catch (_gcmError) {
+        return text;
+      }
     }
-  }
 
-  // 2. Legacy AES-256-CBC decryption fallback (for existing database records)
-  const legacyParts = text.split(':');
-  if (legacyParts.length === 2 && HEX_32_REGEX.test(legacyParts[0])) {
-    try {
-      const iv = Buffer.from(legacyParts[0], 'hex');
-      const encryptedText = Buffer.from(legacyParts[1], 'hex');
-      const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(getEncryptionKey(), 'hex'), iv);
-      const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
-      return decrypted.toString('utf8');
-    } catch (_cbcError) {
-      return text;
+    // 2. Legacy AES-256-CBC decryption fallback (for existing database records)
+    const legacyParts = text.split(':');
+    if (legacyParts.length === 2 && HEX_32_REGEX.test(legacyParts[0]) && HEX_REGEX.test(legacyParts[1])) {
+      try {
+        const iv = Buffer.from(legacyParts[0], 'hex');
+        const encryptedText = Buffer.from(legacyParts[1], 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(getEncryptionKey(), 'hex'), iv);
+        const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+        return decrypted.toString('utf8');
+      } catch (_cbcError) {
+        return text;
+      }
     }
+  } catch (_outerErr) {
+    return text;
   }
 
   return text;
