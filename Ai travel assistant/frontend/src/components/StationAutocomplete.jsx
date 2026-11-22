@@ -128,7 +128,7 @@ export default function StationAutocomplete({ value, onChange, placeholder, inpu
       </div>
 
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-2 w-full bg-[#FFFFFF] dark:bg-[#1B242E] max-h-60 overflow-y-auto rounded-xl shadow-lg border border-[#E2E8F0] dark:border-[#283545]">
+        <div className="absolute left-0 right-0 top-full z-[100] mt-2 w-full min-w-[280px] bg-[#FFFFFF] dark:bg-[#1B242E] max-h-64 overflow-y-auto rounded-xl shadow-2xl border border-[#E2E8F0] dark:border-[#283545]">
           <ul className="py-2">
             {suggestions.map((station, i) => (
               <li 

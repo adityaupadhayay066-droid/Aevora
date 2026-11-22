@@ -328,10 +328,10 @@ export default function LandingPage() {
       {/* ====================================================================
           SECTION 3: HERO SECTION — EDITORIAL TRAVEL SEARCH
           ==================================================================== */}
-      <section className="relative bg-[#F7F8FA] dark:bg-[#121921] border-b border-[#E3E7EA] dark:border-[#293644] overflow-hidden">
+      <section className="relative bg-[#F7F8FA] dark:bg-[#121921] border-b border-[#E3E7EA] dark:border-[#293644] overflow-visible">
         
         {/* Subtle, restrained background texture */}
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-10">
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-10 overflow-hidden">
           <img 
             src="https://images.unsplash.com/photo-1506461883276-594a12b11cf3?auto=format&fit=crop&w=2000&q=80" 
             alt="Scenic rail corridor"
@@ -343,7 +343,7 @@ export default function LandingPage() {
           />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-14 sm:pb-16">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-14 sm:pb-16 overflow-visible">
           
           {/* Hero Headline & Supporting Statement */}
           <div className="max-w-3xl mb-7 sm:mb-9 text-center sm:text-left">
@@ -363,7 +363,7 @@ export default function LandingPage() {
           {/* ================================================================
               STRUCTURED TRAVEL SEARCH BOOKING PANEL
               ================================================================ */}
-          <div id="search-booking-panel" className="relative z-20 bg-white dark:bg-[#1B242E] rounded-xl shadow-xs border border-[#E3E7EA] dark:border-[#293644] text-[#202A32] dark:text-[#F0F4F7]">
+          <div id="search-booking-panel" className="relative z-20 bg-white dark:bg-[#1B242E] rounded-xl shadow-xs border border-[#E3E7EA] dark:border-[#293644] text-[#202A32] dark:text-[#F0F4F7] overflow-visible">
             
             {/* Category Tabs: Flights, Trains, Buses, Hotels */}
             <div className="flex items-center border-b border-[#E3E7EA] dark:border-[#293644] bg-[#F7F8FA] dark:bg-[#162029] overflow-x-auto scrollbar-none px-2 pt-1.5 rounded-t-xl">
@@ -398,7 +398,7 @@ export default function LandingPage() {
 
             {/* TAB CONTENT: TRANSPORT SEARCH (Trains, Flights, Buses) */}
             {activeTab !== 'hotels' ? (
-              <form onSubmit={handleTransportSearch} className="p-4 sm:p-5 space-y-4">
+              <form onSubmit={handleTransportSearch} className="p-4 sm:p-5 space-y-4 overflow-visible">
                 
                 {/* Trip Type Selector (One Way / Round Trip) */}
                 <div className="flex items-center gap-4 text-xs font-medium text-[#66737D] dark:text-[#94A3B8] pb-0.5">
@@ -425,12 +425,12 @@ export default function LandingPage() {
                 </div>
 
                 {/* Form Fields Grid — Integrated Full-Height Dock */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3 items-center overflow-visible">
                   
                   {/* Origin (From) with Floating Divider Swap Button */}
                   <div className={tripType === 'roundTrip' 
-                    ? 'col-span-1 md:col-span-6 xl:col-span-2 relative' 
-                    : 'col-span-1 md:col-span-6 xl:col-span-3 relative'
+                    ? 'col-span-1 md:col-span-6 xl:col-span-2 relative z-20' 
+                    : 'col-span-1 md:col-span-6 xl:col-span-3 relative z-20'
                   }>
                     <StationAutocomplete 
                       value={fromStation}
@@ -444,7 +444,7 @@ export default function LandingPage() {
                     <button
                       type="button"
                       onClick={handleSwapStations}
-                      className="absolute z-20 w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-[#283545] bg-[#FFFFFF] dark:bg-[#1B242E] hover:bg-[#F1F5F9] dark:hover:bg-[#233240] text-[#64748B] dark:text-[#94A3B8] hover:text-[#244C66] dark:hover:text-[#75A4C4] shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95
+                      className="absolute z-30 w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-[#283545] bg-[#FFFFFF] dark:bg-[#1B242E] hover:bg-[#F1F5F9] dark:hover:bg-[#233240] text-[#64748B] dark:text-[#94A3B8] hover:text-[#244C66] dark:hover:text-[#75A4C4] shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95
                         -bottom-4 left-1/2 -translate-x-1/2
                         md:bottom-auto md:left-auto md:-right-4 md:top-1/2 md:-translate-y-1/2 md:translate-x-0"
                       title="Swap Departure and Arrival"
@@ -455,8 +455,8 @@ export default function LandingPage() {
 
                   {/* Destination (To) */}
                   <div className={tripType === 'roundTrip' 
-                    ? 'col-span-1 md:col-span-6 xl:col-span-2' 
-                    : 'col-span-1 md:col-span-6 xl:col-span-3'
+                    ? 'col-span-1 md:col-span-6 xl:col-span-2 relative z-20' 
+                    : 'col-span-1 md:col-span-6 xl:col-span-3 relative z-20'
                   }>
                     <StationAutocomplete 
                       value={toStation}
