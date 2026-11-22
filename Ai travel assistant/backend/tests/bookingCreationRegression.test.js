@@ -38,9 +38,11 @@ async function runBookingCreationRegressionTests() {
     };
   }
 
-  // Ensure test stations NDLS, CSTM exist with coordinates in DB
+  // Ensure database schema and test user/stations exist in DB
   let testUser;
   try {
+    await sequelize.sync();
+
     testUser = await User.findOne({ where: { email: 'booking_test_user@example.com' } });
     if (!testUser) {
       testUser = await User.create({
@@ -50,6 +52,13 @@ async function runBookingCreationRegressionTests() {
         role: 'user',
         account_status: 'active'
       });
+    }
+
+    // Ensure stations dataset
+    const stationCount = await Station.count();
+    if (stationCount < 5) {
+      const { seedStations } = require('../seeders/stationSeeder');
+      await seedStations();
     }
 
     // Ensure NDLS station

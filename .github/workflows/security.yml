@@ -19,10 +19,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: |
             Ai travel assistant/backend/package-lock.json
@@ -58,15 +58,27 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Backend Dependencies
         run: |
           cd "Ai travel assistant/backend"
           npm ci
+
+      - name: Initialize Database Schema & Seed Data
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: traveliq_app
+          DB_PASSWORD: testpassword123
+          DB_NAME: traveliq
+        run: |
+          cd "Ai travel assistant/backend"
+          node seed_runner.js
 
       - name: Run Core Security & Regression Test Suites
         env:
@@ -96,10 +108,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Frontend Dependencies
         run: |
