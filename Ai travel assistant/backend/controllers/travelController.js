@@ -150,12 +150,9 @@ const searchRoutes = async (req, res) => {
             });
         }
 
-        // Intelligent Date Fallback: default to tomorrow if omitted
-        let dateInfo = null;
-        if (!departureDate) {
-            dateInfo = parseTravelDate(null);
-            departureDate = dateInfo.travelDate;
-        }
+        // Authoritative Date Normalization: parse any format (YYYY-MM-DD, "23 Nov 2026", "23/11/2026", etc.)
+        const dateInfo = parseTravelDate(departureDate);
+        departureDate = dateInfo?.travelDate || departureDate;
         
         if (sourceStation) {
             console.log(`[Backend] Resolved Source Station: ${sourceStation.station_name} (${sourceStation.station_code}) Coordinates: [${sourceStation.latitude}, ${sourceStation.longitude}]`);

@@ -231,9 +231,9 @@ const CITY_CLUSTERS = [
   {
     city: 'Goa',
     primaryCode: 'MAO',
-    stationCodes: ['MAO', 'KRMI', 'THVM'],
+    stationCodes: ['MAO', 'VSG', 'KRMI', 'THVM', 'PERN', 'CNO'],
     synonyms: [
-      'goa', 'madgaon', 'margao', 'karmali', 'thivim', 'vasco', 'goi', 'dabolim', 'mopa'
+      'goa', 'madgaon', 'margao', 'karmali', 'thivim', 'vasco', 'vasco da gama', 'vsg', 'goi', 'dabolim', 'mopa'
     ]
   }
 ];
@@ -658,22 +658,24 @@ function parseTravelDate(text) {
     };
   }
 
-  // 6. Day + Month text: e.g. "15th Oct", "15 October", "Oct 15"
+  // 6. Day + Month text: e.g. "15th Oct", "15 October", "Oct 15", "23 Nov 2026"
   const monthMap = {
     jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
     jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
   };
-  const textDateMatch = lower.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i) ||
-                        lower.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
+  const textDateMatch = lower.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:\s+(\d{4}))?\b/i) ||
+                        lower.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?\b/i);
 
   if (textDateMatch) {
     let day = textDateMatch[1];
     let monthStr = textDateMatch[2];
+    let explicitYear = textDateMatch[3];
     if (isNaN(parseInt(day, 10))) {
       monthStr = textDateMatch[1];
       day = textDateMatch[2];
+      explicitYear = textDateMatch[3];
     }
-    const currentYear = new Date().getFullYear();
+    const currentYear = explicitYear ? parseInt(explicitYear, 10) : new Date().getFullYear();
     const mm = monthMap[monthStr.substring(0, 3).toLowerCase()];
     if (mm) {
       const dd = day.padStart(2, '0');

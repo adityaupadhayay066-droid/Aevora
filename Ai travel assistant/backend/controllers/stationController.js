@@ -1,5 +1,6 @@
 const { StationModel, Station, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const { CITY_CLUSTERS } = require('../services/stationResolver');
 
 // Helper to generate a procedural 3D station model data
 const generateDefaultStationModel = (stationCode, stationName) => {
@@ -384,20 +385,50 @@ const searchStations = async (req, res) => {
             const queryLower = rawQuery.toLowerCase();
             const escapedExact = sequelize.escape(queryUpper);
             const escapedPrefix = sequelize.escape(queryUpper + '%');
+            const escapedLowerExact = sequelize.escape(queryLower);
+            const escapedLowerPrefix = sequelize.escape(queryLower + '%');
+
+            // Find matching cluster for the query (e.g. "Goa" -> MAO, VSG, KRMI, THVM)
+            const matchedCluster = CITY_CLUSTERS.find(c => 
+                c.city.toLowerCase() === queryLower || 
+                c.synonyms.some(s => s === queryLower || (queryLower.length >= 3 && (s.startsWith(queryLower) || s === queryLower)))
+            );
+            const clusterCodes = matchedCluster ? matchedCluster.stationCodes : [];
+
+            const orConditions = [
+                { station_code: { [Op.like]: `%${queryUpper}%` } },
+                { station_name: { [Op.like]: `%${queryUpper}%` } },
+                { station_code: { [Op.like]: `%${rawQuery}%` } },
+                { station_name: { [Op.like]: `%${rawQuery}%` } },
+                sequelize.where(sequelize.fn('LOWER', sequelize.col('station_code')), { [Op.like]: `%${queryLower}%` }),
+                sequelize.where(sequelize.fn('LOWER', sequelize.col('station_name')), { [Op.like]: `%${queryLower}%` }),
+                sequelize.where(sequelize.fn('LOWER', sequelize.col('city')), { [Op.like]: `%${queryLower}%` }),
+                sequelize.where(sequelize.fn('LOWER', sequelize.col('state')), { [Op.like]: `%${queryLower}%` })
+            ];
+
+            if (clusterCodes.length > 0) {
+                orConditions.unshift({ station_code: clusterCodes });
+            }
+
+            const clusterCodesEscaped = clusterCodes.length > 0 
+                ? clusterCodes.map(c => sequelize.escape(c.toUpperCase())).join(', ') 
+                : "''";
+
             stations = await Station.findAll({
                 where: {
-                    [Op.or]: [
-                        { station_code: { [Op.like]: `%${queryUpper}%` } },
-                        { station_name: { [Op.like]: `%${queryUpper}%` } },
-                        { station_code: { [Op.like]: `%${rawQuery}%` } },
-                        { station_name: { [Op.like]: `%${rawQuery}%` } },
-                        sequelize.where(sequelize.fn('LOWER', sequelize.col('station_code')), { [Op.like]: `%${queryLower}%` }),
-                        sequelize.where(sequelize.fn('LOWER', sequelize.col('station_name')), { [Op.like]: `%${queryLower}%` }),
-                        sequelize.where(sequelize.fn('LOWER', sequelize.col('city')), { [Op.like]: `%${queryLower}%` })
-                    ]
+                    [Op.or]: orConditions
                 },
                 order: [
-                    [sequelize.literal(`CASE WHEN UPPER(station_code) = ${escapedExact} THEN 0 WHEN UPPER(station_code) LIKE ${escapedPrefix} THEN 1 WHEN UPPER(station_name) LIKE ${escapedPrefix} THEN 2 ELSE 3 END`), 'ASC'],
+                    [sequelize.literal(`CASE 
+                        WHEN UPPER(station_code) = ${escapedExact} THEN 0 
+                        WHEN UPPER(station_code) IN (${clusterCodesEscaped}) THEN 1 
+                        WHEN UPPER(station_code) LIKE ${escapedPrefix} THEN 2 
+                        WHEN UPPER(station_name) LIKE ${escapedPrefix} THEN 3 
+                        WHEN LOWER(city) = ${escapedLowerExact} OR LOWER(state) = ${escapedLowerExact} THEN 4
+                        WHEN LOWER(city) LIKE ${escapedLowerPrefix} OR LOWER(state) LIKE ${escapedLowerPrefix} THEN 5
+                        WHEN LOWER(station_name) LIKE ${escapedLowerPrefix} THEN 6
+                        ELSE 7 
+                    END`), 'ASC'],
                     ['station_name', 'ASC']
                 ],
                 limit: 20

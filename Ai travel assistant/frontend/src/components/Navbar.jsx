@@ -20,8 +20,54 @@ const TRAVEL_CATEGORIES = [
   { id: 'trains', label: 'Trains', icon: Train, path: '/?tab=trains' },
   { id: 'buses', label: 'Buses', icon: Bus, path: '/?tab=buses' },
   { id: 'hotels', label: 'Hotels', icon: Building2, path: '/hotels' },
+  { id: 'ai-features', label: 'AI Studio', icon: Sparkles, path: '/dashboard/ai-workspace' },
   { id: 'explore', label: 'Explore', icon: Compass, path: '/destinations' },
   { id: 'trips', label: 'My Trips', icon: CalendarDays, path: '/dashboard/my-trips' }
+];
+
+const AI_STUDIO_ITEMS = [
+  {
+    title: 'Agentic Planner',
+    desc: 'Autonomous AI agents coordinate cascade route, booking, food & hotel options',
+    to: '/dashboard/agentic-planner',
+    icon: Cpu,
+    badge: 'Autonomous'
+  },
+  {
+    title: 'RAG Copilot & Search',
+    desc: 'Ask complex travel queries verified against Indian transit knowledge base',
+    to: '/dashboard/rag',
+    icon: Brain,
+    badge: 'Copilot'
+  },
+  {
+    title: 'AI Delay & Fare Predictions',
+    desc: 'Deep learning LSTM forecasts for train delays, crowd density & dynamic pricing',
+    to: '/dashboard/ai-predictions',
+    icon: BarChart3,
+    badge: 'Neural'
+  },
+  {
+    title: 'Voice Assistant',
+    desc: 'Hands-free voice booking, platform inquiry, food ordering in Hindi & English',
+    to: '/dashboard/voice-assistant',
+    icon: Mic,
+    badge: 'Voice'
+  },
+  {
+    title: 'Knowledge Graph',
+    desc: 'Interactive 3D relational graph linking cities, routes, stations, and stays',
+    to: '/dashboard/knowledge-graph',
+    icon: Network,
+    badge: 'Graph'
+  },
+  {
+    title: 'Interactive 3D Travel Globe',
+    desc: 'Visualize domestic flight corridors, weather fronts, and emissions in 3D',
+    to: '/dashboard/3d-globe',
+    icon: Globe2,
+    badge: '3D'
+  }
 ];
 
 const EXPLORE_MENU_ITEMS = [
@@ -79,6 +125,13 @@ const EXPLORE_MENU_ITEMS = [
 const SEARCHABLE_ITEMS = [
   { title: 'Emergency SOS & Helpline Dispatch', category: 'Safety', to: '#sos', icon: ShieldAlert },
   { title: 'Search Flights, Trains & Buses', category: 'Booking', to: '/dashboard', icon: Compass },
+  { title: 'Agentic Autonomous Planner', category: 'AI Tools', to: '/dashboard/agentic-planner', icon: Cpu },
+  { title: 'RAG Copilot & Intelligent Search', category: 'AI Tools', to: '/dashboard/rag', icon: Brain },
+  { title: 'AI Delay & Fare Predictions', category: 'AI Tools', to: '/dashboard/ai-predictions', icon: BarChart3 },
+  { title: 'AEVORA Voice Assistant', category: 'AI Tools', to: '/dashboard/voice-assistant', icon: Mic },
+  { title: 'Interactive 3D Travel Globe', category: 'AI Tools', to: '/dashboard/3d-globe', icon: Globe2 },
+  { title: 'Knowledge Graph Visualization', category: 'AI Tools', to: '/dashboard/knowledge-graph', icon: Network },
+  { title: 'AI Workspace Command Center', category: 'AI Tools', to: '/dashboard/ai-workspace', icon: Sparkles },
   { title: 'Hotel Recommendations & Stays', category: 'Hotels', to: '/hotels', icon: Building2 },
   { title: 'Explore 50+ Indian Destinations', category: 'Destinations', to: '/destinations', icon: MapPin },
   { title: 'Live GPS Train Tracking', category: 'Live Status', to: '/dashboard/track', icon: Navigation },
@@ -86,7 +139,6 @@ const SEARCHABLE_ITEMS = [
   { title: 'B2B Developer Hub & API Keys', category: 'Developers', to: '/dashboard/developer', icon: Key },
   { title: 'My Booked Trips & Tickets', category: 'Account', to: '/dashboard/my-trips', icon: CalendarDays },
   { title: 'Account Security & Biometrics', category: 'Security', to: '/dashboard/security', icon: Shield },
-  { title: 'AI Workspace Command Center', category: 'AI Tools', to: '/dashboard/ai-workspace', icon: Sparkles },
   { title: '3D Railway Station Twin', category: 'Visual Tools', to: '/dashboard/station-3d', icon: Building2 },
   { title: 'Customer Support & Helpdesk', category: 'Support', to: '/support', icon: HelpCircle }
 ];
@@ -194,6 +246,11 @@ export default function Navbar() {
       return;
     }
 
+    if (category.id === 'ai-features') {
+      navigate('/dashboard/ai-workspace');
+      return;
+    }
+
     // Flights, Trains, Buses, Hotels
     setSelectedHomeTab(category.id);
     if (location.pathname === '/') {
@@ -226,6 +283,17 @@ export default function Navbar() {
     const tabParam = urlParams.get('tab');
     if (location.pathname === '/destinations' || location.pathname.startsWith('/destinations/')) {
       return 'explore';
+    }
+    if (
+      location.pathname === '/dashboard/ai-workspace' || 
+      location.pathname === '/dashboard/rag' || 
+      location.pathname === '/dashboard/voice-assistant' || 
+      location.pathname === '/dashboard/3d-globe' || 
+      location.pathname === '/dashboard/knowledge-graph' || 
+      location.pathname === '/dashboard/agentic-planner' || 
+      location.pathname === '/dashboard/ai-predictions'
+    ) {
+      return 'ai-features';
     }
     if (location.pathname === '/dashboard/my-trips') {
       return 'trips';
@@ -281,12 +349,86 @@ export default function Navbar() {
             <Logo size="md" withTagline={true} />
           </div>
 
-          {/* CENTER: TRAVEL CATEGORY TABS (MakeMyTrip / Skyscanner layout - Visible only after login/signup) */}
-          {user && (
-            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 h-full whitespace-nowrap">
-              {visibleCategories.map((cat) => {
+          {/* CENTER: TRAVEL CATEGORY TABS (MakeMyTrip / Skyscanner layout - Accessible across pages) */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 h-full whitespace-nowrap">
+            {visibleCategories.map((cat) => {
               const Icon = cat.icon;
               const isActive = activeCategory === cat.id;
+
+              if (cat.id === 'ai-features') {
+                return (
+                  <div key={cat.id} className="relative h-full flex items-center">
+                    <button
+                      onClick={() => toggleDropdown('ai-features')}
+                      className={`h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all cursor-pointer border ${
+                        isActive || activeDropdown === 'ai-features'
+                          ? 'bg-[#EAF0F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] border-[#E3E7EA] dark:border-[#293644] font-semibold'
+                          : 'bg-transparent text-[#66737D] dark:text-[#9CAAB5] border-transparent hover:bg-[#EEF2F4] dark:hover:bg-[#162029] hover:text-[#202A32] dark:hover:text-[#F0F4F7]'
+                      }`}
+                      aria-expanded={activeDropdown === 'ai-features'}
+                    >
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive || activeDropdown === 'ai-features' ? 'text-[#244C66] dark:text-[#75A4C4]' : 'text-sky-500'}`} />
+                      <span>{cat.label}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 text-[#89939B] ${activeDropdown === 'ai-features' ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {activeDropdown === 'ai-features' && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6, scale: 0.99 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 4, scale: 0.99 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute left-0 top-[56px] w-[460px] p-2.5 rounded-xl bg-white dark:bg-[#1B242E] border border-[#E3E7EA] dark:border-[#293644] shadow-xl z-50"
+                        >
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {AI_STUDIO_ITEMS.map((item, idx) => (
+                              <Link
+                                key={idx}
+                                to={item.to}
+                                onClick={() => setActiveDropdown(null)}
+                                className="p-2.5 rounded-lg hover:bg-[#F7F8FA] dark:hover:bg-[#162029] transition-colors flex items-start gap-2.5 group border border-transparent hover:border-[#E3E7EA] dark:hover:border-[#293644]"
+                              >
+                                <div className="p-1.5 rounded-md bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 shrink-0 group-hover:scale-105 transition-transform">
+                                  <item.icon className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-semibold text-[#202A32] dark:text-[#F0F4F7] truncate block">
+                                      {item.title}
+                                    </span>
+                                    {item.badge && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
+                                        {item.badge}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-[#66737D] dark:text-[#9CAAB5] line-clamp-1 mt-0.5">
+                                    {item.desc}
+                                  </p>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+
+                          <div className="mt-2 pt-2 border-t border-[#E3E7EA] dark:border-[#293644] flex items-center justify-between px-2">
+                            <Link
+                              to="/dashboard/ai-workspace"
+                              onClick={() => setActiveDropdown(null)}
+                              className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
+                            >
+                              Open AI Workspace Hub <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              8 PyTorch & RAG Neural Models
+                            </span>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
 
               if (cat.id === 'explore') {
                 return (
@@ -378,7 +520,6 @@ export default function Navbar() {
               );
             })}
           </nav>
-        )}
 
           {/* RIGHT: CONTROLS & USER ACCOUNT ACTIONS */}
           <div className="flex items-center gap-2 shrink-0">
@@ -499,6 +640,15 @@ export default function Navbar() {
                         >
                           <CalendarDays className="w-3.5 h-3.5 text-[#89939B]" />
                           <span>My Trips & Tickets</span>
+                        </Link>
+                        <Link
+                          to="/dashboard/ai-workspace"
+                          onClick={() => setActiveDropdown(null)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F7F8FA] dark:hover:bg-[#162029] text-[#202A32] dark:text-[#F0F4F7] transition-colors font-medium"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-sky-500" />
+                          <span>AI Studio & Models</span>
+                          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded">AI</span>
                         </Link>
                         <Link
                           to="/dashboard/profile"
@@ -659,6 +809,40 @@ export default function Navbar() {
                 })}
               </div>
             )}
+
+            {/* AI Studio & Intelligence Tools */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">AI Studio & Models</p>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded">8 Models</span>
+              </div>
+              {AI_STUDIO_ITEMS.map((item, idx) => {
+                const ItemIcon = item.icon;
+                return (
+                  <Link
+                    key={idx}
+                    to={item.to}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-[#202A32] dark:text-[#F0F4F7] text-sm font-semibold transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400">
+                        <ItemIcon className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-xs font-semibold">{item.title}</div>
+                        <p className="text-[10px] font-normal text-[#66737D] dark:text-[#9CAAB5] line-clamp-1">{item.desc}</p>
+                      </div>
+                    </div>
+                    {item.badge && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
 
             {/* Explore Tools */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">

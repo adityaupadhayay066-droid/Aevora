@@ -335,21 +335,39 @@ function resolveClusterTransfer(arrStationCode, depStationCode) {
  * accounting for base date, day offsets (+0, +1, +2 days), and clock times.
  */
 function buildIsoUtcTimestamp(baseDateStr, timeStr, dayOffset = 0) {
-  const safeDateStr = baseDateStr || new Date().toISOString().split('T')[0];
+  let safeDateStr = String(baseDateStr || '').trim();
+  if (!safeDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(safeDateStr)) {
+    try {
+      const parsed = new Date(safeDateStr);
+      if (!isNaN(parsed.getTime())) {
+        safeDateStr = parsed.toISOString().split('T')[0];
+      } else {
+        safeDateStr = new Date().toISOString().split('T')[0];
+      }
+    } catch (_) {
+      safeDateStr = new Date().toISOString().split('T')[0];
+    }
+  }
+
   const parts = safeDateStr.split('-');
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10) - 1; // 0-indexed month
-  const day = parseInt(parts[2], 10) + dayOffset;
+  const year = parseInt(parts[0], 10) || new Date().getFullYear();
+  const month = (parseInt(parts[1], 10) || 1) - 1; // 0-indexed month
+  const day = (parseInt(parts[2], 10) || 1) + dayOffset;
 
   let hh = 8, mm = 0, ss = 0;
   if (timeStr) {
-    const tParts = timeStr.trim().split(':');
+    const tParts = String(timeStr).trim().split(':');
     hh = parseInt(tParts[0], 10) || 0;
     mm = parseInt(tParts[1], 10) || 0;
     ss = parseInt(tParts[2], 10) || 0;
   }
 
   const d = new Date(Date.UTC(year, month, day, hh, mm, ss));
+  if (isNaN(d.getTime())) {
+    const fallback = new Date();
+    fallback.setDate(fallback.getDate() + 1 + dayOffset);
+    return fallback.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  }
   return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
