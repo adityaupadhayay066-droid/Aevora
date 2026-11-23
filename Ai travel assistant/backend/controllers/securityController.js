@@ -527,23 +527,40 @@ function escapeHtml(value) {
 }
 
 const triggerSOS = async (req, res) => {
-    const { latitude, longitude, emergency_type = 'General', location_name, note } = req.body;
+    const { 
+        latitude, 
+        longitude, 
+        emergency_type = 'General', 
+        location_name, 
+        note,
+        blood_group,
+        medical_conditions,
+        emergency_contacts
+    } = req.body;
     try {
         const user = req.user?.id ? await User.findByPk(req.user.id) : null;
         const passengerName = user?.name || 'Guest Passenger';
         const passengerEmail = user?.email || 'unregistered_guest@transit.aevora';
+        const passengerPhone = user?.phone || null;
         const locDesc = location_name || (latitude && longitude ? `LAT: ${latitude}, LNG: ${longitude}` : 'Unknown Coordinates');
+        const mapsLink = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : null;
+        
         const details = {
             message: `CRITICAL SOS TRIGGERED: passenger ${passengerName} reported a ${emergency_type} emergency at ${locDesc}.`,
             emergency_type,
             passenger_name: passengerName,
             passenger_email: passengerEmail,
+            passenger_phone: passengerPhone,
             location_name: location_name || null,
             note: note || null,
             latitude: latitude || null,
             longitude: longitude || null,
+            maps_link: mapsLink,
+            blood_group: blood_group || null,
+            medical_conditions: medical_conditions || null,
+            emergency_contacts: Array.isArray(emergency_contacts) ? emergency_contacts : [],
             responder_status: 'Dispatched',
-            rp_helpline: '182 / 112',
+            rp_helpline: '182 / 139 / 112',
             timestamp: new Date()
         };
 
@@ -561,10 +578,13 @@ const triggerSOS = async (req, res) => {
         // Trigger dynamic notification to administrator with strict HTML sanitization
         const safePassengerName = escapeHtml(passengerName);
         const safePassengerEmail = escapeHtml(passengerEmail);
+        const safePassengerPhone = passengerPhone ? escapeHtml(passengerPhone) : 'Not Provided';
         const safeEmergencyType = escapeHtml(emergency_type);
         const safeLocDesc = escapeHtml(locDesc);
         const safeNote = note ? escapeHtml(note) : '';
         const safeCoords = latitude && longitude ? `${escapeHtml(latitude)}, ${escapeHtml(longitude)}` : 'Unknown';
+        const safeBloodGroup = blood_group ? escapeHtml(blood_group) : 'Not Provided';
+        const safeMedical = medical_conditions ? escapeHtml(medical_conditions) : 'None Reported';
 
         sendEmail({
             to: process.env.ADMIN_ALERT_EMAIL || 'admin@traveliq.com',
@@ -574,10 +594,17 @@ const triggerSOS = async (req, res) => {
                 <p><strong>Incident Reference:</strong> AEV-SOS-${alert.id}</p>
                 <p><strong>Passenger Name:</strong> ${safePassengerName}</p>
                 <p><strong>Email Address:</strong> ${safePassengerEmail}</p>
+                <p><strong>Phone:</strong> ${safePassengerPhone}</p>
                 <p><strong>Emergency Nature:</strong> ${safeEmergencyType}</p>
                 <p><strong>Reported Location:</strong> ${safeLocDesc}</p>
                 <p><strong>Locked GPS Coordinates:</strong> ${safeCoords}</p>
+                ${mapsLink ? `<p><strong>Live GPS Map:</strong> <a href="${escapeHtml(mapsLink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(mapsLink)}</a></p>` : ''}
                 ${safeNote ? `<p><strong>Passenger Note / Coach / Berth:</strong> ${safeNote}</p>` : ''}
+                <hr/>
+                <h4>Medical & Emergency Profile:</h4>
+                <p><strong>Blood Group:</strong> ${safeBloodGroup}</p>
+                <p><strong>Medical Alert / Allergies:</strong> ${safeMedical}</p>
+                <hr/>
                 <p><strong>Dispatched Team:</strong> Railway Protection Force (RPF) Responder Team Locked.</p>
                 <p>Please log in to the TravelIQ Administration Panel immediately to track GIS telemetry.</p>
             `
@@ -593,7 +620,8 @@ const triggerSOS = async (req, res) => {
             success: true,
             message: '🚨 EMERGENCY DISPATCHED: Coordinates & live metrics sent to Railway Protection Force!',
             alertId: alert.id,
-            alert
+            alert,
+            mapsLink
         });
     } catch (error) {
         console.error('[Trigger SOS Controller Error]:', error);
