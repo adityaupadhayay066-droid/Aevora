@@ -28,97 +28,84 @@ const TRAVEL_CATEGORIES = [
 const AI_STUDIO_ITEMS = [
   {
     title: 'Agentic Planner',
-    desc: 'Autonomous AI agents coordinate cascade route, booking, food & hotel options',
+    desc: 'Autonomous multi-agent trip planning across routes, stays & food',
     to: '/dashboard/agentic-planner',
-    icon: Cpu,
-    badge: 'Autonomous'
+    icon: Cpu
   },
   {
     title: 'RAG Copilot & Search',
-    desc: 'Ask complex travel queries verified against Indian transit knowledge base',
+    desc: 'Transit AI copilot answering queries using verified Indian rail data',
     to: '/dashboard/rag',
-    icon: Brain,
-    badge: 'Copilot'
+    icon: Brain
   },
   {
-    title: 'AI Delay & Fare Predictions',
-    desc: 'Deep learning LSTM forecasts for train delays, crowd density & dynamic pricing',
+    title: 'Delay & Fare Predictions',
+    desc: 'Deep learning forecasts for train delays, platform crowds & fares',
     to: '/dashboard/ai-predictions',
-    icon: BarChart3,
-    badge: 'Neural'
+    icon: BarChart3
   },
   {
     title: 'Voice Assistant',
-    desc: 'Hands-free voice booking, platform inquiry, food ordering in Hindi & English',
+    desc: 'Hands-free multilingual voice booking & train platform inquiries',
     to: '/dashboard/voice-assistant',
-    icon: Mic,
-    badge: 'Voice'
+    icon: Mic
   },
   {
     title: 'Knowledge Graph',
-    desc: 'Interactive 3D relational graph linking cities, routes, stations, and stays',
+    desc: 'Interactive 3D graph connecting transit hubs, cities & corridors',
     to: '/dashboard/knowledge-graph',
-    icon: Network,
-    badge: 'Graph'
+    icon: Network
   },
   {
-    title: 'Interactive 3D Travel Globe',
-    desc: 'Visualize domestic flight corridors, weather fronts, and emissions in 3D',
+    title: '3D Travel Globe',
+    desc: 'Interactive 3D globe visualizing air corridors & regional routes',
     to: '/dashboard/3d-globe',
-    icon: Globe2,
-    badge: '3D'
+    icon: Globe2
   }
 ];
 
 const EXPLORE_MENU_ITEMS = [
   {
     title: 'Popular Destinations',
-    desc: 'Curated travel guides, seasonal weather & budgets for 50+ Indian cities',
+    desc: 'Curated travel guides, seasonal weather & budgets for 50+ cities',
     to: '/destinations',
-    icon: MapPin,
-    badge: 'Guide'
+    icon: MapPin
   },
   {
     title: 'Multimodal Route Planner',
     desc: 'Compare trains, domestic flights, and interstate buses side-by-side',
     to: '/dashboard',
-    icon: Compass,
-    badge: 'Popular'
+    icon: Compass
   },
   {
     title: 'Live Train GPS Tracker',
     desc: 'Real-time delay tracking, current platform and station locator',
     to: '/dashboard/track',
-    icon: Navigation,
-    badge: 'Live'
+    icon: Navigation
   },
   {
     title: 'Station Food Delivery',
-    desc: 'Hygienic meals from IRCTC approved restaurants delivered to your berth',
+    desc: 'Hygienic meals from IRCTC vendors delivered right to your berth',
     to: '/dashboard/food',
-    icon: Utensils,
-    badge: null
+    icon: Utensils
   },
   {
     title: '3D Station Navigation',
-    desc: 'Digital twin interactive map of station platforms, waiting halls & exits',
+    desc: 'Digital twin interactive map of station platforms, halls & exits',
     to: '/dashboard/station-3d',
-    icon: Building2,
-    badge: '3D'
+    icon: Building2
   },
   {
     title: 'Eco Carbon Footprint',
     desc: 'Calculate transit carbon footprint and earn eco travel badges',
     to: '/dashboard/eco',
-    icon: Leaf,
-    badge: null
+    icon: Leaf
   },
   {
     title: 'B2B Developer Hub',
     desc: 'API keys, AI endpoints, telemetry & developer pricing plans',
     to: '/dashboard/developer',
-    icon: Key,
-    badge: 'B2B'
+    icon: Key
   }
 ];
 
@@ -360,9 +347,9 @@ export default function Navbar() {
                   <div key={cat.id} className="relative h-full flex items-center">
                     <button
                       onClick={() => toggleDropdown('ai-features')}
-                      className={`h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all cursor-pointer border ${
+                      className={`h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer border ${
                         isActive || activeDropdown === 'ai-features'
-                          ? 'bg-[#EAF0F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] border-[#E3E7EA] dark:border-[#293644] font-semibold'
+                          ? 'bg-[#EAF0F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] border-[#E3E7EA] dark:border-[#293644]'
                           : 'bg-transparent text-[#66737D] dark:text-[#9CAAB5] border-transparent hover:bg-[#EEF2F4] dark:hover:bg-[#162029] hover:text-[#202A32] dark:hover:text-[#F0F4F7]'
                       }`}
                       aria-expanded={activeDropdown === 'ai-features'}
@@ -379,31 +366,33 @@ export default function Navbar() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 4, scale: 0.99 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute left-0 top-[56px] w-[460px] p-2.5 rounded-xl bg-white dark:bg-[#1B242E] border border-[#E3E7EA] dark:border-[#293644] shadow-xl z-50"
+                          className="absolute left-0 top-[56px] w-[580px] sm:w-[620px] p-3.5 rounded-2xl bg-white dark:bg-[#18222D] border border-[#E3E7EA] dark:border-[#283545] shadow-2xl z-50"
                         >
+                          <div className="flex items-center justify-between px-2.5 pb-2 mb-2 border-b border-[#E3E7EA] dark:border-[#263544]">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                              AI Travel Intelligence
+                            </span>
+                            <span className="text-[10px] font-medium text-[#89939B] dark:text-[#7A8895]">
+                              Autonomous Coordination & Forecasts
+                            </span>
+                          </div>
+
                           <div className="grid grid-cols-2 gap-1.5">
                             {AI_STUDIO_ITEMS.map((item, idx) => (
                               <Link
                                 key={idx}
                                 to={item.to}
                                 onClick={() => setActiveDropdown(null)}
-                                className="p-2.5 rounded-lg hover:bg-[#F7F8FA] dark:hover:bg-[#162029] transition-colors flex items-start gap-2.5 group border border-transparent hover:border-[#E3E7EA] dark:hover:border-[#293644]"
+                                className="p-2.5 rounded-xl hover:bg-[#F7F8FA] dark:hover:bg-[#141C24] transition-all flex items-start gap-3 group border border-transparent hover:border-[#E3E7EA] dark:hover:border-[#283747]"
                               >
-                                <div className="p-1.5 rounded-md bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 shrink-0 group-hover:scale-105 transition-transform">
+                                <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 group-hover:bg-sky-600 group-hover:text-white dark:group-hover:bg-sky-500 dark:group-hover:text-white transition-all shadow-2xs">
                                   <item.icon className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-semibold text-[#202A32] dark:text-[#F0F4F7] truncate block">
-                                      {item.title}
-                                    </span>
-                                    {item.badge && (
-                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
-                                        {item.badge}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-[#66737D] dark:text-[#9CAAB5] line-clamp-1 mt-0.5">
+                                  <span className="text-xs font-semibold text-[#202A32] dark:text-[#F0F4F7] group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors block leading-tight">
+                                    {item.title}
+                                  </span>
+                                  <p className="text-[11px] leading-relaxed text-[#66737D] dark:text-[#9CAAB5] mt-0.5 line-clamp-2">
                                     {item.desc}
                                   </p>
                                 </div>
@@ -411,17 +400,19 @@ export default function Navbar() {
                             ))}
                           </div>
 
-                          <div className="mt-2 pt-2 border-t border-[#E3E7EA] dark:border-[#293644] flex items-center justify-between px-2">
+                          <div className="mt-2.5 pt-2.5 border-t border-[#E3E7EA] dark:border-[#263544] flex items-center justify-between px-2.5">
                             <Link
                               to="/dashboard/ai-workspace"
                               onClick={() => setActiveDropdown(null)}
-                              className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
+                              className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1.5 transition-colors group"
                             >
-                              Open AI Workspace Hub <ArrowRight className="w-3.5 h-3.5" />
+                              <span>Open AI Workspace Hub</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                             </Link>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              8 PyTorch & RAG Neural Models
-                            </span>
+                            <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#89939B] dark:text-[#7A8895]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <span>Neural Core Online</span>
+                            </div>
                           </div>
                         </motion.div>
                       )}
@@ -435,9 +426,9 @@ export default function Navbar() {
                   <div key={cat.id} className="relative h-full flex items-center">
                     <button
                       onClick={() => toggleDropdown('explore')}
-                      className={`h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all cursor-pointer border ${
+                      className={`h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer border ${
                         isActive || activeDropdown === 'explore'
-                          ? 'bg-[#EAF0F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] border-[#E3E7EA] dark:border-[#293644] font-semibold'
+                          ? 'bg-[#EAF0F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] border-[#E3E7EA] dark:border-[#293644]'
                           : 'bg-transparent text-[#66737D] dark:text-[#9CAAB5] border-transparent hover:bg-[#EEF2F4] dark:hover:bg-[#162029] hover:text-[#202A32] dark:hover:text-[#F0F4F7]'
                       }`}
                       aria-expanded={activeDropdown === 'explore'}
@@ -454,26 +445,33 @@ export default function Navbar() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 4, scale: 0.99 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute left-0 top-[56px] w-[420px] p-2.5 rounded-xl bg-white dark:bg-[#1B242E] border border-[#E3E7EA] dark:border-[#293644] shadow-lg z-50"
+                          className="absolute left-0 top-[56px] w-[580px] sm:w-[620px] p-3.5 rounded-2xl bg-white dark:bg-[#18222D] border border-[#E3E7EA] dark:border-[#283545] shadow-2xl z-50"
                         >
-                          <div className="grid grid-cols-2 gap-1">
+                          <div className="flex items-center justify-between px-2.5 pb-2 mb-2 border-b border-[#E3E7EA] dark:border-[#263544]">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#244C66] dark:text-[#75A4C4]">
+                              Travel Discovery & Utilities
+                            </span>
+                            <span className="text-[10px] font-medium text-[#89939B] dark:text-[#7A8895]">
+                              Real-Time Transit Tools
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1.5">
                             {EXPLORE_MENU_ITEMS.map((item, idx) => (
                               <Link
                                 key={idx}
                                 to={item.to}
                                 onClick={() => setActiveDropdown(null)}
-                                className="p-2.5 rounded-lg hover:bg-[#F7F8FA] dark:hover:bg-[#162029] transition-colors flex items-start gap-2.5 group"
+                                className="p-2.5 rounded-xl hover:bg-[#F7F8FA] dark:hover:bg-[#141C24] transition-all flex items-start gap-3 group border border-transparent hover:border-[#E3E7EA] dark:hover:border-[#283747]"
                               >
-                                <div className="p-1.5 rounded-md bg-[#EEF2F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] shrink-0">
-                                  <item.icon className="w-3.5 h-3.5" />
+                                <div className="w-8 h-8 rounded-lg bg-[#EEF2F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] flex items-center justify-center shrink-0 group-hover:bg-[#244C66] group-hover:text-white dark:group-hover:bg-[#75A4C4] dark:group-hover:text-[#18222D] transition-all shadow-2xs">
+                                  <item.icon className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-semibold text-[#202A32] dark:text-[#F0F4F7] truncate block">
-                                      {item.title}
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-[#66737D] dark:text-[#9CAAB5] line-clamp-1 mt-0.5">
+                                  <span className="text-xs font-semibold text-[#202A32] dark:text-[#F0F4F7] group-hover:text-[#244C66] dark:group-hover:text-[#75A4C4] transition-colors block leading-tight">
+                                    {item.title}
+                                  </span>
+                                  <p className="text-[11px] leading-relaxed text-[#66737D] dark:text-[#9CAAB5] mt-0.5 line-clamp-2">
                                     {item.desc}
                                   </p>
                                 </div>
@@ -481,20 +479,21 @@ export default function Navbar() {
                             ))}
                           </div>
 
-                          <div className="mt-2 pt-2 border-t border-[#E3E7EA] dark:border-[#293644] flex items-center justify-between px-2">
+                          <div className="mt-2.5 pt-2.5 border-t border-[#E3E7EA] dark:border-[#263544] flex items-center justify-between px-2.5">
                             <Link
                               to="/destinations"
                               onClick={() => setActiveDropdown(null)}
-                              className="text-xs font-semibold text-[#244C66] dark:text-[#75A4C4] hover:underline flex items-center gap-1"
+                              className="text-xs font-semibold text-[#244C66] dark:text-[#75A4C4] hover:underline flex items-center gap-1.5 transition-colors group"
                             >
-                              Explore 50+ Destinations <ArrowRight className="w-3.5 h-3.5" />
+                              <span>Explore All 50+ Destinations</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                             </Link>
                             <Link
                               to="/dashboard/track"
                               onClick={() => setActiveDropdown(null)}
-                              className="text-xs font-semibold text-[#66737D] dark:text-[#9CAAB5] hover:text-[#244C66] dark:hover:text-[#75A4C4] flex items-center gap-1"
+                              className="text-xs font-semibold text-[#66737D] dark:text-[#9CAAB5] hover:text-[#244C66] dark:hover:text-[#75A4C4] flex items-center gap-1 transition-colors"
                             >
-                              Live Train Status
+                              Live Train GPS Tracker
                             </Link>
                           </div>
                         </motion.div>
@@ -814,7 +813,7 @@ export default function Navbar() {
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">AI Studio & Models</p>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded">8 Models</span>
+                <span className="text-[9px] font-medium text-slate-400">7 Autonomous Tools</span>
               </div>
               {AI_STUDIO_ITEMS.map((item, idx) => {
                 const ItemIcon = item.icon;
@@ -831,14 +830,9 @@ export default function Navbar() {
                       </div>
                       <div className="text-left">
                         <div className="text-xs font-semibold">{item.title}</div>
-                        <p className="text-[10px] font-normal text-[#66737D] dark:text-[#9CAAB5] line-clamp-1">{item.desc}</p>
+                        <p className="text-[10px] font-normal text-[#66737D] dark:text-[#9CAAB5] line-clamp-2 leading-relaxed">{item.desc}</p>
                       </div>
                     </div>
-                    {item.badge && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0">
-                        {item.badge}
-                      </span>
-                    )}
                   </Link>
                 );
               })}
