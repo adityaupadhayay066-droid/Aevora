@@ -232,7 +232,7 @@ const getUserSecuritySettings = async (req, res) => {
         if (!sec) {
             sec = await UserSecurity.create({ user_id: req.user.id });
         }
-        
+
         let score = 30; // default for strong password
         const checklist = {
             strong_password: true,
@@ -253,7 +253,7 @@ const getUserSecuritySettings = async (req, res) => {
             score += 20;
             checklist.recovery_options = true;
         }
-        
+
         const user = await User.findByPk(req.user.id);
         if (user.trusted_devices && user.trusted_devices.length > 0) {
             score += 5;
@@ -308,7 +308,7 @@ const generateBackupCodes = async (req, res) => {
         if (!sec) {
             sec = await UserSecurity.create({ user_id: req.user.id });
         }
-        
+
         const rawCodes = [];
         const hashedCodes = [];
         for (let i = 0; i < 10; i++) {
@@ -317,7 +317,7 @@ const generateBackupCodes = async (req, res) => {
             const hashed = crypto.createHash('sha256').update(rawCode).digest('hex');
             hashedCodes.push(hashed);
         }
-        
+
         sec.backup_codes = hashedCodes;
         await sec.save();
 
@@ -465,7 +465,7 @@ const verifyPasskeyRegister = async (req, res) => {
 const removePasskeys = async (req, res) => {
     try {
         await UserPasskey.destroy({ where: { user_id: req.user.id } });
-        
+
         let sec = await UserSecurity.findOne({ where: { user_id: req.user.id } });
         if (sec) {
             sec.passkey_enabled = false;
@@ -527,11 +527,11 @@ function escapeHtml(value) {
 }
 
 const triggerSOS = async (req, res) => {
-    const { 
-        latitude, 
-        longitude, 
-        emergency_type = 'General', 
-        location_name, 
+    const {
+        latitude,
+        longitude,
+        emergency_type = 'General',
+        location_name,
         note,
         blood_group,
         medical_conditions,
@@ -544,7 +544,7 @@ const triggerSOS = async (req, res) => {
         const passengerPhone = user?.phone || null;
         const locDesc = location_name || (latitude && longitude ? `LAT: ${latitude}, LNG: ${longitude}` : 'Unknown Coordinates');
         const mapsLink = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : null;
-        
+
         const details = {
             message: `CRITICAL SOS TRIGGERED: passenger ${passengerName} reported a ${emergency_type} emergency at ${locDesc}.`,
             emergency_type,
