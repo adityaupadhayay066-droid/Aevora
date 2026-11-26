@@ -731,33 +731,33 @@ console.log(data);`;
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   {
-                    key: 'pack_10k',
-                    name: '10,000 API Calls Booster',
+                    key: 'pack_1k',
+                    name: '1,000 API Calls Booster',
                     price: '$15',
                     priceNumber: 15,
-                    quotaCount: 10000,
-                    quota: '+10,000 calls',
+                    quotaCount: 1000,
+                    quota: '+1,000 calls',
                     desc: 'Great for short test sprints and prototype launches.',
                     rateLimit: 'Standard queue'
                   },
                   {
-                    key: 'pack_50k',
-                    name: '50,000 API Calls Booster',
-                    price: '$49',
-                    priceNumber: 49,
-                    quotaCount: 50000,
-                    quota: '+50,000 calls',
+                    key: 'pack_5k',
+                    name: '5,000 API Calls Booster',
+                    price: '$50',
+                    priceNumber: 50,
+                    quotaCount: 5000,
+                    quota: '+5,000 calls',
                     popular: true,
                     desc: 'Perfect for seasonal marketing spikes and heavy traffic.',
                     rateLimit: 'Priority API queue'
                   },
                   {
-                    key: 'pack_200k',
-                    name: '200,000 API Calls Booster',
-                    price: '$149',
-                    priceNumber: 149,
-                    quotaCount: 200000,
-                    quota: '+200,000 calls',
+                    key: 'pack_25k',
+                    name: '25,000 API Calls Booster',
+                    price: '$200',
+                    priceNumber: 200,
+                    quotaCount: 25000,
+                    quota: '+25,000 calls',
                     desc: 'Enterprise high-throughput top-up with zero rate degradation.',
                     rateLimit: 'High-concurrency VIP'
                   }

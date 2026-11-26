@@ -147,8 +147,8 @@ async function runB2BBillingAndConcurrencyRegressionTests() {
       assert.ok(verifyRes.data.error.includes('Invalid Verification Code'), 'Must return verification code failure');
     });
 
-    // ─── Test 5: Hardcoded OTP 849201 is rejected ───
-    await test('5. Hardcoded OTP 849201 is rejected when not matching the server-issued challenge', async () => {
+    // ─── Test 5: Hardcoded OTP 849201 is rejected & 5 failed attempts invalidate intent ───
+    await test('5. Hardcoded OTP 849201 is rejected & 5 failed attempts lock out payment intent', async () => {
       const initReq = {
         user: devUser,
         body: { plan_tier: 'starter', payment_method: 'CARD' }
@@ -157,17 +157,31 @@ async function runB2BBillingAndConcurrencyRegressionTests() {
       await apiKeyController.initiateDeveloperPayment(initReq, initRes);
       const orderId = initRes.data.order_id;
 
-      const verifyReq = {
-        user: devUser,
-        body: {
-          order_id: orderId,
-          verification_code: '849201' // previous hardcoded bypass code
-        }
-      };
-      const verifyRes = createMockRes();
+      for (let i = 0; i < 4; i++) {
+        const verifyReq = {
+          user: devUser,
+          body: { order_id: orderId, verification_code: '849201' }
+        };
+        const verifyRes = createMockRes();
+        await apiKeyController.verifyDeveloperPayment(verifyReq, verifyRes);
+        assert.strictEqual(verifyRes.statusCode, 400, 'Wrong OTP must be rejected with 400');
+      }
 
-      await apiKeyController.verifyDeveloperPayment(verifyReq, verifyRes);
-      assert.strictEqual(verifyRes.statusCode, 400, 'Hardcoded OTP 849201 must be rejected');
+      // 5th failed attempt invalidates intent with 429
+      const lockRes = createMockRes();
+      await apiKeyController.verifyDeveloperPayment({
+        user: devUser,
+        body: { order_id: orderId, verification_code: '849201' }
+      }, lockRes);
+      assert.strictEqual(lockRes.statusCode, 429, '5th failed verification attempt must lock intent');
+
+      // Intent must now be deleted
+      const afterRes = createMockRes();
+      await apiKeyController.verifyDeveloperPayment({
+        user: devUser,
+        body: { order_id: orderId, verification_code: '849201' }
+      }, afterRes);
+      assert.strictEqual(afterRes.statusCode, 404, 'Invalidated intent must be removed');
     });
 
     // ─── Test 6: Concurrency burst: exactly remaining quota succeeds, 0 overshoot ───

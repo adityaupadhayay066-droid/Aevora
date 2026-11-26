@@ -100,8 +100,12 @@ exports.getTicketDetails = async (req, res) => {
 // Add a reply to a ticket
 exports.replyToTicket = async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id || req.params.ticketId;
         const { message, status } = req.body;
+
+        if (!message || typeof message !== 'string' || !message.trim()) {
+            return res.status(400).json({ success: false, message: 'Reply message is required.' });
+        }
         
         const ticket = await SupportTicket.findByPk(id);
         if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
@@ -112,16 +116,26 @@ exports.replyToTicket = async (req, res) => {
         }
 
         const sender_type = req.user.role === 'admin' ? 'Admin' : 'User';
+        const allowedStatuses = ['Open', 'In Progress', 'Resolved', 'Closed', 'Rejected', 'Needs Review'];
+
+        if (status !== undefined) {
+            if (req.user.role !== 'admin') {
+                return res.status(403).json({ success: false, message: 'Only administrators may explicitly override ticket status.' });
+            }
+            if (!allowedStatuses.includes(status)) {
+                return res.status(400).json({ success: false, message: 'Invalid ticket status.' });
+            }
+        }
 
         await SupportMessage.create({
-            ticket_id: id,
+            ticket_id: ticket.id,
             sender_type,
             sender_id: req.user.id,
-            message
+            message: message.trim()
         });
 
         // Update ticket status
-        if (status) {
+        if (status && req.user.role === 'admin') {
             ticket.status = status;
         } else if (sender_type === 'User' && ticket.status === 'Resolved') {
             ticket.status = 'Open'; // Reopen if user replies
@@ -131,7 +145,7 @@ exports.replyToTicket = async (req, res) => {
         
         // Save the latest admin reply to the main table as well
         if (sender_type === 'Admin') {
-            ticket.admin_reply = message;
+            ticket.admin_reply = message.trim();
         }
         
         await ticket.save();
@@ -165,8 +179,21 @@ exports.getAllTickets = async (req, res) => {
 // Admin updates ticket status/priority
 exports.updateTicket = async (req, res) => {
     try {
-        const { id } = req.params;
+        if (req.user?.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Administrator privileges required to update ticket metadata.' });
+        }
+
+        const id = req.params.id || req.params.ticketId;
         const { status, priority } = req.body;
+        const allowedStatuses = ['Open', 'In Progress', 'Resolved', 'Closed', 'Rejected', 'Needs Review'];
+        const allowedPriorities = ['Low', 'Medium', 'High', 'Critical'];
+
+        if (status !== undefined && !allowedStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid ticket status.' });
+        }
+        if (priority !== undefined && !allowedPriorities.includes(priority)) {
+            return res.status(400).json({ success: false, message: 'Invalid ticket priority.' });
+        }
 
         const ticket = await SupportTicket.findByPk(id);
         if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });

@@ -328,10 +328,12 @@ async function runMassAssignmentAndErrorTests() {
 }
 
 if (require.main === module) {
-  runMassAssignmentAndErrorTests().catch(err => {
-    console.error('Fatal test error:', err);
-    process.exit(1);
-  });
+  runMassAssignmentAndErrorTests()
+    .then(() => process.exit(0))
+    .catch(err => {
+      console.error('Fatal test error:', err);
+      process.exit(1);
+    });
 }
 
 module.exports = runMassAssignmentAndErrorTests;

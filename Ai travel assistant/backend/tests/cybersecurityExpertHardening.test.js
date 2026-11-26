@@ -327,7 +327,9 @@ async function runCybersecurityTests() {
   }
 }
 
-runCybersecurityTests().catch(err => {
-  console.error('Fatal test runner error:', err);
-  process.exit(1);
-});
+runCybersecurityTests()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Fatal test runner error:', err);
+    process.exit(1);
+  });

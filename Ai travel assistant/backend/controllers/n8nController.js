@@ -72,8 +72,11 @@ exports.handleSupportReply = async (req, res) => {
       message: formattedMessage
     });
 
+    const n8nAllowedStatuses = ['Open', 'In Progress', 'Needs Review'];
+    const safeRequestedStatus = n8nAllowedStatuses.includes(status) ? status : 'In Progress';
+
     ticket.admin_reply = safeContent;
-    ticket.status = isBlocked ? 'Needs Review' : (status || 'In Progress');
+    ticket.status = isBlocked ? 'Needs Review' : safeRequestedStatus;
     await ticket.save();
 
     // Audit log

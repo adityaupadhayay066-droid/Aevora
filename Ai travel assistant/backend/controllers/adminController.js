@@ -253,7 +253,7 @@ const ROLE_HIERARCHY = {
     super_admin: 100,
     admin: 50,
     data_manager: 30,
-    support_agent: 20,
+    support_admin: 20,
     user: 10
 };
 
@@ -261,7 +261,7 @@ function getRoleLevel(user) {
     if (!user) return 0;
     if (user.role === 'admin') {
         const adminRole = user.admin_role || 'admin';
-        return ROLE_HIERARCHY[adminRole] || ROLE_HIERARCHY.admin;
+        return ROLE_HIERARCHY[adminRole] ?? 0; // Fail closed on unrecognized admin_role
     }
     if (user.role === 'user') return ROLE_HIERARCHY.user;
     return 0; // Fail closed
@@ -1348,7 +1348,7 @@ const updateAdminRole = async (req, res) => {
             await AdminLog.create({
                 admin_id: req.user.id,
                 action: 'ROLE_CHANGE',
-                target_user_id: user.id,
+                target_id: String(user.id),
                 details: `Super Admin changed admin role for ${user.email} to ${admin_role}`
             }).catch(() => {});
         }

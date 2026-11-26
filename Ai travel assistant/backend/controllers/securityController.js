@@ -1,4 +1,4 @@
-const { Session, LoginHistory, User, RefreshToken, SecurityAlert, UserSecurity, UserPasskey } = require('../models');
+const { Session, LoginHistory, User, RefreshToken, SecurityAlert, UserSecurity, UserPasskey, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 const { sendEmail } = require('../services/emailService');
@@ -99,21 +99,40 @@ const revokeSession = async (req, res) => {
  */
 const toggle2FA = async (req, res) => {
     try {
-        const user = await User.findByPk(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found.' });
-        }
+        const nextState = await sequelize.transaction(async (t) => {
+            const user = await User.findByPk(req.user.id, { lock: t.LOCK.UPDATE, transaction: t });
+            if (!user) {
+                const err = new Error('User not found.');
+                err.statusCode = 404;
+                throw err;
+            }
 
-        user.two_factor_enabled = !user.two_factor_enabled;
-        await user.save();
+            const [sec] = await UserSecurity.findOrCreate({
+                where: { user_id: user.id },
+                defaults: { user_id: user.id, two_factor_enabled: Boolean(user.two_factor_enabled) },
+                transaction: t
+            });
+
+            const currentEnabled = Boolean(sec.two_factor_enabled || user.two_factor_enabled);
+            const updated = !currentEnabled;
+
+            user.two_factor_enabled = updated;
+            sec.two_factor_enabled = updated;
+            await user.save({ transaction: t });
+            await sec.save({ transaction: t });
+            return updated;
+        });
 
         res.json({
-            two_factor_enabled: user.two_factor_enabled,
-            message: user.two_factor_enabled
+            two_factor_enabled: nextState,
+            message: nextState
                 ? 'Two-factor authentication has been enabled. You will receive a verification code on every new login.'
                 : 'Two-factor authentication has been disabled.'
         });
     } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({ message: error.message });
+        }
         console.error('[Toggle 2FA Error]:', error);
         res.status(500).json({ message: 'Internal server error. Please try again later.' });
     }
@@ -541,7 +560,7 @@ const triggerSOS = async (req, res) => {
         const user = req.user?.id ? await User.findByPk(req.user.id) : null;
         const passengerName = user?.name || 'Guest Passenger';
         const passengerEmail = user?.email || 'unregistered_guest@transit.aevora';
-        const passengerPhone = user?.phone || null;
+        const passengerPhone = user?.phone_number || user?.phone || null;
         const locDesc = location_name || (latitude && longitude ? `LAT: ${latitude}, LNG: ${longitude}` : 'Unknown Coordinates');
         const mapsLink = (latitude && longitude) ? `https://www.google.com/maps?q=${latitude},${longitude}` : null;
 

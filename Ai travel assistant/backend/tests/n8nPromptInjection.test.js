@@ -137,6 +137,21 @@ async function runPromptInjectionTests() {
       assert.ok(mockTicket.admin_reply.includes('escalated to our tier-2 customer support team'));
       assert.strictEqual(loggedAction.action, 'AI_SUPPORT_REPLY_INJECTION_BLOCKED');
       assert.strictEqual(loggedAction.target_id, '99');
+
+      // Also verify safe n8n replies cannot close/resolve tickets via status override
+      mockTicket.status = 'Open';
+      const benignReq = {
+        headers: { 'x-traveliq-secret': process.env.N8N_WEBHOOK_SECRET },
+        ip: '10.0.0.1',
+        body: {
+          ticket_id: 99,
+          sender_name: 'AI Support',
+          status: 'Closed',
+          message: 'Thank you for contacting TravelIQ. Your request is currently under review by our team.'
+        }
+      };
+      await handleSupportReply(benignReq, res);
+      assert.strictEqual(mockTicket.status, 'In Progress', 'n8n callback must NEVER transition ticket to Closed');
     } finally {
       SupportTicket.findByPk = origFindByPk;
       SupportMessage.create = origMsgCreate;

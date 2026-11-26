@@ -105,15 +105,25 @@ const updateDestination = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Destination not found.' });
         }
 
-        const updates = { ...req.body };
+        const ALLOWED_FIELDS = [
+            'name', 'state', 'country', 'description', 'image_url', 'popularity',
+            'best_time_to_visit', 'estimated_budget', 'attractions',
+            'food_recommendations', 'safety_info', 'local_transport', 'tags', 'status'
+        ];
+        const updates = {};
+        for (const key of ALLOWED_FIELDS) {
+            if (req.body[key] !== undefined) {
+                updates[key] = req.body[key];
+            }
+        }
         if (updates.attractions && !Array.isArray(updates.attractions)) {
-            updates.attractions = updates.attractions.split(',').map(s => s.trim());
+            updates.attractions = String(updates.attractions).split(',').map(s => s.trim()).filter(Boolean);
         }
         if (updates.food_recommendations && !Array.isArray(updates.food_recommendations)) {
-            updates.food_recommendations = updates.food_recommendations.split(',').map(s => s.trim());
+            updates.food_recommendations = String(updates.food_recommendations).split(',').map(s => s.trim()).filter(Boolean);
         }
         if (updates.tags && !Array.isArray(updates.tags)) {
-            updates.tags = updates.tags.split(',').map(s => s.trim());
+            updates.tags = String(updates.tags).split(',').map(s => s.trim()).filter(Boolean);
         }
 
         await destination.update(updates);

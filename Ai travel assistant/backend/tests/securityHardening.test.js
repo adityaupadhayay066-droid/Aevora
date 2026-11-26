@@ -292,6 +292,93 @@ async function runSecurityHardeningTests() {
     assert.ok(isDuplicate, 'Payment attempt on already confirmed booking must be rejected as duplicate');
   });
 
+  // ─── 9. Auth Hardening (Turnstile, 2FA Sync & Pre-Auth Status Checks) ───
+  console.log('\n--- Test Suite 9: Auth Hardening (Turnstile, 2FA Sync & Pre-Auth Status) ---');
+  const { loginUser } = require('../controllers/authController');
+  const { toggle2FA } = require('../controllers/securityController');
+  const { User, UserSecurity } = require('../models');
+
+  await asyncTest('loginUser rejects omitted turnstileToken when TURNSTILE_SECRET_KEY is configured', async () => {
+    const prevKey = process.env.TURNSTILE_SECRET_KEY;
+    process.env.TURNSTILE_SECRET_KEY = 'test_turnstile_secret_12345';
+    try {
+      let statusCode = 200;
+      let payload = null;
+      const res = {
+        status(c) { statusCode = c; return this; },
+        json(d) { payload = d; return this; }
+      };
+      await loginUser({ body: { email: 'nobody@example.com', password: 'Password123!' }, headers: {}, ip: '127.0.0.1' }, res);
+      assert.strictEqual(statusCode, 400, 'Must reject missing turnstileToken with 400');
+      assert.ok(payload.message.includes('CAPTCHA'));
+    } finally {
+      if (prevKey === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+      else process.env.TURNSTILE_SECRET_KEY = prevKey;
+    }
+  });
+
+  await asyncTest('loginUser never mutates pending_verification or deactivated status prior to password auth and blocks suspended users', async () => {
+    const ts = Date.now();
+    const uPending = await User.create({
+      name: 'Pending User',
+      email: `pending_auth_${ts}@example.com`,
+      password: 'ValidPassword123!',
+      role: 'user',
+      account_status: 'pending_verification',
+      email_verified: false
+    });
+    const uSuspended = await User.create({
+      name: 'Suspended User',
+      email: `suspended_auth_${ts}@example.com`,
+      password: 'ValidPassword123!',
+      role: 'user',
+      account_status: 'suspended',
+      email_verified: true
+    });
+    try {
+      let code1 = 200;
+      const res1 = { status(c) { code1 = c; return this; }, json() { return this; } };
+      await loginUser({ body: { email: uPending.email, password: 'WrongPassword!' }, headers: {}, ip: '127.0.0.1' }, res1);
+      assert.strictEqual(code1, 403);
+      await uPending.reload();
+      assert.strictEqual(uPending.account_status, 'pending_verification', 'Failed login must never activate pending_verification');
+      assert.strictEqual(uPending.email_verified, false, 'Failed login must never mark email_verified true');
+
+      let code2 = 200;
+      const res2 = { status(c) { code2 = c; return this; }, json() { return this; } };
+      await loginUser({ body: { email: uSuspended.email, password: 'ValidPassword123!' }, headers: {}, ip: '127.0.0.1' }, res2);
+      assert.strictEqual(code2, 403, 'Suspended account must be blocked even with valid password');
+    } finally {
+      await User.destroy({ where: { id: [uPending.id, uSuspended.id] } });
+    }
+  });
+
+  await asyncTest('toggle2FA atomically syncs both User.two_factor_enabled and UserSecurity.two_factor_enabled', async () => {
+    const ts = Date.now();
+    const u2fa = await User.create({
+      name: '2FA Sync User',
+      email: `twofa_sync_${ts}@example.com`,
+      password: 'ValidPassword123!',
+      role: 'user',
+      account_status: 'active',
+      two_factor_enabled: false
+    });
+    try {
+      let data = null;
+      const res = { status() { return this; }, json(d) { data = d; return this; } };
+      await toggle2FA({ user: { id: u2fa.id } }, res);
+      assert.strictEqual(data.two_factor_enabled, true);
+
+      await u2fa.reload();
+      const sec = await UserSecurity.findOne({ where: { user_id: u2fa.id } });
+      assert.strictEqual(u2fa.two_factor_enabled, true);
+      assert.ok(sec && sec.two_factor_enabled === true, 'UserSecurity.two_factor_enabled must stay synchronized with User');
+    } finally {
+      await UserSecurity.destroy({ where: { user_id: u2fa.id } });
+      await User.destroy({ where: { id: u2fa.id } });
+    }
+  });
+
   console.log('\n================================================================');
   console.log(`Security Hardening Test Summary: ${passed} Passed, ${failed} Failed`);
   console.log('================================================================\n');

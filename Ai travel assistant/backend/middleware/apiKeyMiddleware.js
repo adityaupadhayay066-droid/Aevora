@@ -76,7 +76,7 @@ const requireApiKey = async (req, res, next) => {
       const durationMs = Date.now() - startTime;
       const ipAddress = req.ip || '127.0.0.1';
 
-      if (res.statusCode >= 400) {
+      if (res.statusCode >= 500) {
         refundQuota(organization.id);
       }
 

@@ -54,6 +54,9 @@ const protect = async (req, res, next) => {
             if (req.user.account_status === 'deactivated') {
                 return res.status(403).json({ message: 'This account has been deactivated by an administrator.' });
             }
+            if (req.user.account_status === 'suspended') {
+                return res.status(403).json({ message: 'This account has been suspended by an administrator.' });
+            }
             if (req.user.account_status === 'deleted') {
                 return res.status(403).json({ message: 'This account has been permanently deleted.' });
             }

@@ -28,7 +28,9 @@ async function runRoleHierarchyTests() {
     1: { id: 1, email: 'superadmin@traveliq.com', role: 'admin', admin_role: 'super_admin', account_status: 'active', save: async () => {}, update: async (d) => Object.assign(mockUsers[1], d), toSafeObject: () => mockUsers[1] },
     2: { id: 2, email: 'admin_bob@traveliq.com', role: 'admin', admin_role: 'admin', account_status: 'active', save: async () => {}, update: async (d) => Object.assign(mockUsers[2], d), toSafeObject: () => mockUsers[2] },
     3: { id: 3, email: 'admin_carol@traveliq.com', role: 'admin', admin_role: 'admin', account_status: 'active', save: async () => {}, update: async (d) => Object.assign(mockUsers[3], d), toSafeObject: () => mockUsers[3] },
-    4: { id: 4, email: 'user_david@traveliq.com', role: 'user', account_status: 'active', save: async () => {}, update: async (d) => Object.assign(mockUsers[4], d), toSafeObject: () => mockUsers[4] }
+    4: { id: 4, email: 'user_david@traveliq.com', role: 'user', account_status: 'active', save: async () => {}, update: async (d) => Object.assign(mockUsers[4], d), toSafeObject: () => mockUsers[4] },
+    5: { id: 5, email: 'support_eve@traveliq.com', role: 'admin', admin_role: 'support_admin', account_status: 'active', save: async () => {}, update: async (d) => Object.assign(mockUsers[5], d), toSafeObject: () => mockUsers[5] },
+    6: { id: 6, email: 'datamanager_frank@traveliq.com', role: 'admin', admin_role: 'data_manager', account_status: 'active', save: async () => {}, update: async (d) => Object.assign(mockUsers[6], d), toSafeObject: () => mockUsers[6] }
   };
 
   let destroyedSessions = [];
@@ -185,6 +187,22 @@ async function runRoleHierarchyTests() {
       const recentLog = adminLogs.find(l => l.action === 'PASSWORD_RESET');
       assert.ok(recentLog, 'Password reset must be logged in AdminLog');
       assert.strictEqual(recentLog.details.includes('SuperSecureNewPassword123@!'), false, 'Passwords must NEVER appear in logs');
+    });
+
+    // ─── Test 9: support_admin cannot manage or delete data_manager (Privilege Escalation Fix) ───
+    await test('support_admin cannot delete or reset password of higher-ranked data_manager (403 Forbidden)', async () => {
+      const req = {
+        user: mockUsers[5], // support_admin (level 20)
+        params: { id: 6 },  // data_manager (level 30)
+        body: { newPassword: 'ValidPassword123!' }
+      };
+      const res1 = createMockRes();
+      await resetUserPassword(req, res1);
+      assert.strictEqual(res1.statusCode, 403, 'support_admin must NOT reset data_manager password');
+
+      const res2 = createMockRes();
+      await deleteUser(req, res2);
+      assert.strictEqual(res2.statusCode, 403, 'support_admin must NOT delete data_manager');
     });
 
   } finally {

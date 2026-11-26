@@ -67,12 +67,12 @@ export function generateHotelInvoiceHTML(booking = {}) {
   let defaultUserPhone = 'Not Provided';
 
   try {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('userInfo') || localStorage.getItem('user');
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
       if (parsed.name) defaultUserName = parsed.name;
       if (parsed.email) defaultUserEmail = parsed.email;
-      if (parsed.phone) defaultUserPhone = parsed.phone;
+      if (parsed.phone_number || parsed.phone) defaultUserPhone = parsed.phone_number || parsed.phone;
     }
   } catch (e) {}
 

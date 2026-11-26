@@ -1102,7 +1102,9 @@ async function runBookingLifecycleIntegrityMatrixTests() {
   }
 }
 
-runBookingLifecycleIntegrityMatrixTests().catch(err => {
-  console.error('Fatal test runner failure:', err);
-  process.exit(1);
-});
+runBookingLifecycleIntegrityMatrixTests()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Fatal test runner failure:', err);
+    process.exit(1);
+  });

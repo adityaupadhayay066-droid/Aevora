@@ -186,14 +186,14 @@ export default function HotelBookingModal({
       setAppliedCoupon(null);
       setConfirmedBooking(null);
 
-      // Try reading user from localStorage
+      // Try reading user from localStorage ('userInfo' from AuthContext)
       try {
-        const storedUser = localStorage.getItem('user');
+        const storedUser = localStorage.getItem('userInfo') || localStorage.getItem('user');
         if (storedUser) {
           const u = JSON.parse(storedUser);
           if (u.name) setGuestName(u.name);
           if (u.email) setGuestEmail(u.email);
-          if (u.phone) setGuestPhone(u.phone);
+          if (u.phone_number || u.phone) setGuestPhone(u.phone_number || u.phone);
         }
       } catch (e) {}
     }
@@ -571,44 +571,15 @@ export default function HotelBookingModal({
 
         if (onBookingSuccess) onBookingSuccess(booked);
       } else {
-        throw new Error('Could not complete reservation.');
+        throw new Error(res.data?.message || 'Could not complete reservation.');
       }
     } catch (err) {
       console.error('Reservation error:', err);
-      // Fallback local instant confirmation
-      const fallbackBooking = {
-        id: `TIQ-STAY-${Math.floor(100000 + Math.random() * 900000)}`,
-        bookingReference: `TIQ-STAY-${Math.floor(100000 + Math.random() * 900000)}`,
-        createdAt: new Date().toISOString(),
-        status: 'CONFIRMED',
-        hotelName: hotel.name,
-        city: hotel.city,
-        category: hotel.category,
-        isHostel: hotel.isHostel,
-        roomType: selectedRoom?.name || 'Standard Room',
-        unitsCount,
-        guestName: guestName.trim(),
-        guestEmail: guestEmail.trim(),
-        guestPhone: guestPhone.trim(),
-        govIdType,
-        govIdNumber: govIdNumber || '5829 1948 4829',
-        govIdVerified: true,
-        checkInDate,
-        checkOutDate,
-        nights,
-        guestsCount,
-        mealPlan,
-        paymentMethod: finalPaymentMethod,
-        pricing: {
-          ratePerNight: pricing.ratePerNight,
-          grandTotal: pricing.grandTotal,
-          taxes: pricing.taxes,
-          discount: pricing.discount
-        }
-      };
-      setConfirmedBooking(fallbackBooking);
-      setStep(4);
-      toast.success('Stay Confirmed! E-Voucher Ready.');
+      const status = err.response?.status;
+      const errMsg = status === 401
+        ? 'Please sign in to complete your stay reservation.'
+        : (err.response?.data?.message || err.message || 'Failed to complete reservation. Please try again.');
+      toast.error(errMsg, { duration: 4500 });
     } finally {
       setIsSubmitting(false);
     }

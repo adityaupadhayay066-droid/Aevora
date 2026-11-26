@@ -461,6 +461,84 @@ async function runPaymentIntegrityRegressionTests() {
       assert.strictEqual(refundedTxnCount, 1, 'Exactly one transaction record must be refunded');
     });
 
+    // 14. Out-of-order payment.failed webhook scoped by order_id + deduplicated
+    await test('14. Out-of-order payment.failed webhook only marks matching order_id and deduplicates event_id', async () => {
+      const tripFailed = await Trip.create({
+        user_id: user1.id,
+        source: 'NDLS',
+        destination: 'CSTM',
+        travel_mode: 'Train',
+        predicted_price: 1500
+      });
+      const bookingFailed = await Booking.create({
+        user_id: user1.id,
+        trip_id: tripFailed.id,
+        source_station_code: 'NDLS',
+        destination_station_code: 'CSTM',
+        train_number: '12951',
+        travel_class: '3A',
+        ticket_fare: 1500,
+        payment_status: 'Unpaid',
+        booking_status: 'Pending'
+      });
+
+      const oldOrderId = `order_old_${Date.now()}`;
+      const newOrderId = `order_new_${Date.now()}`;
+      await Transaction.create({
+        booking_id: bookingFailed.id,
+        user_id: user1.id,
+        transaction_id: `TXN-OLD-${Date.now()}`,
+        order_id: oldOrderId,
+        amount: 1500,
+        currency: 'INR',
+        payment_method: 'UPI',
+        status: PAYMENT_STATUSES.PENDING
+      });
+      const newTxn = await Transaction.create({
+        booking_id: bookingFailed.id,
+        user_id: user1.id,
+        transaction_id: `TXN-NEW-${Date.now()}`,
+        order_id: newOrderId,
+        amount: 1500,
+        currency: 'INR',
+        payment_method: 'UPI',
+        status: PAYMENT_STATUSES.PENDING
+      });
+
+      const failEvtId = `evt_fail_${Date.now()}`;
+      const failBody = JSON.stringify({
+        event: 'payment.failed',
+        event_id: failEvtId,
+        booking_id: bookingFailed.id,
+        order_id: oldOrderId,
+        payment_id: `pay_fail_${Date.now()}`
+      });
+      const failSig = crypto.createHmac('sha256', webhookSecret).update(Buffer.from(failBody)).digest('hex');
+      try {
+        const res1 = createMockRes();
+        await handlePaymentWebhook({
+          headers: { 'x-razorpay-signature': failSig },
+          rawBody: Buffer.from(failBody),
+          body: JSON.parse(failBody)
+        }, res1);
+        assert.strictEqual(res1.statusCode, 200);
+
+        await newTxn.reload();
+        assert.strictEqual(newTxn.status, PAYMENT_STATUSES.PENDING, 'Newer order transaction must remain Pending');
+
+        const resDup = createMockRes();
+        await handlePaymentWebhook({
+          headers: { 'x-razorpay-signature': failSig },
+          rawBody: Buffer.from(failBody),
+          body: JSON.parse(failBody)
+        }, resDup);
+        assert.strictEqual(resDup.statusCode, 200);
+        assert.ok(resDup.data.message.includes('Duplicate'), 'Duplicate payment.failed webhook must be deduplicated');
+      } finally {
+        await ProcessedWebhookEvent.destroy({ where: { event_id: failEvtId } });
+      }
+    });
+
   } finally {
     // Cleanup
     if (user1) {
@@ -486,8 +564,10 @@ async function runPaymentIntegrityRegressionTests() {
   }
 }
 
-runPaymentIntegrityRegressionTests().catch(err => {
-  console.error('Fatal test error:', err);
-  process.exit(1);
-});
+runPaymentIntegrityRegressionTests()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Fatal test error:', err);
+    process.exit(1);
+  });
 

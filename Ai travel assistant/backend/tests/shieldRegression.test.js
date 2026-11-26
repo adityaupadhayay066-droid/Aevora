@@ -309,12 +309,12 @@ async function runShieldRegressionTests() {
     // 14. Blacklist expiry automatically unblocks IP after duration
     await test('14. Blacklist entry automatically unblocks after duration expires', async () => {
       const expiringIP = '198.51.100.77';
-      // Blacklist for 10ms
-      await blacklistIP(expiringIP, 'Short duration test', 10);
+      // Blacklist for 150ms (exceeds SecurityAlert async DB write latency)
+      await blacklistIP(expiringIP, 'Short duration test', 150);
       assert.ok(isIPBlacklisted(expiringIP), 'Should be blacklisted initially');
 
-      // Wait 25ms for expiry
-      await new Promise(r => setTimeout(r, 25));
+      // Wait 200ms for expiry
+      await new Promise(r => setTimeout(r, 200));
 
       const statusAfterExpiry = isIPBlacklisted(expiringIP);
       assert.strictEqual(statusAfterExpiry, false, 'IP must be unblocked after expiry');

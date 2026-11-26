@@ -60,7 +60,7 @@ const createOrder = async (req, res) => {
     if (booking.booking_status === 'Cancelled') {
       return res.status(400).json({ message: 'Cannot create payment order for a cancelled booking.' });
     }
-    if (booking.booking_status === 'Expired') {
+    if (booking.booking_status === 'Expired' || (booking.expires_at && new Date(booking.expires_at) < new Date())) {
       return res.status(400).json({ message: 'Cannot create payment order for an expired booking.' });
     }
 
@@ -197,7 +197,7 @@ const createTransaction = async (req, res) => {
     if (booking.payment_status === 'Refunded' || booking.booking_status === 'Cancelled') {
       return res.status(400).json({ message: 'Cannot process payment for a cancelled or refunded booking.' });
     }
-    if (booking.booking_status === 'Expired') {
+    if (booking.booking_status === 'Expired' || (booking.expires_at && new Date(booking.expires_at) < new Date())) {
       return res.status(400).json({ message: 'Cannot process payment for an expired booking.' });
     }
 
@@ -310,6 +310,9 @@ const createTransaction = async (req, res) => {
       if (lockedBooking.booking_status === 'Cancelled') {
         throw new Error('CANCELLED: Booking has been cancelled.');
       }
+      if (lockedBooking.booking_status === 'Expired' || (lockedBooking.expires_at && new Date(lockedBooking.expires_at) < new Date())) {
+        throw new Error('EXPIRED: Booking hold has expired.');
+      }
 
       let transaction = null;
       if (gateway_order_id) {
@@ -410,6 +413,9 @@ const createTransaction = async (req, res) => {
     if (error.message.startsWith('CANCELLED')) {
       return res.status(400).json({ message: 'Cannot process payment for a cancelled booking.' });
     }
+    if (error.message.startsWith('EXPIRED')) {
+      return res.status(400).json({ message: 'Cannot process payment for an expired booking.' });
+    }
     console.error('[Payment Controller Error]:', error.message);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
@@ -434,6 +440,10 @@ const handlePaymentWebhook = async (req, res) => {
     }
 
     // Capture raw body bytes - essential to prevent re-serialization signature mismatches
+    if (!req.rawBody && (!req.body || (typeof req.body === 'object' && Object.keys(req.body).length === 0))) {
+      return res.status(400).json({ message: 'Invalid webhook payload: empty or unparseable body.' });
+    }
+
     const rawPayloadBytes = req.rawBody 
       ? req.rawBody 
       : (typeof req.body === 'string' ? Buffer.from(req.body) : Buffer.from(JSON.stringify(req.body)));
@@ -450,36 +460,114 @@ const handlePaymentWebhook = async (req, res) => {
     const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const eventType = payload.event || payload.event_type || payload.type;
     const paymentEntity = payload.payload?.payment?.entity || payload.payment || {};
+    const orderEntity = payload.payload?.order?.entity || payload.order || {};
     const refundEntity = payload.payload?.refund?.entity || payload.refund || {};
+    const headerEventId = req.headers['x-razorpay-event-id'];
+    const event_id = headerEventId || payload.event_id || payload.id ||
+      (refundEntity.id ? `evt_${eventType || 'refund'}_${refundEntity.id}` :
+        (paymentEntity.id ? `evt_${eventType || 'payment'}_${paymentEntity.id}` : null));
+    const payloadHash = crypto.createHash('sha256').update(rawPayloadBytes).digest('hex');
+
+    // 0. Global Idempotency Check across ALL webhook event types
+    if (event_id) {
+      const existingEvent = await ProcessedWebhookEvent.findOne({ where: { event_id } });
+      if (existingEvent) {
+        return res.status(200).json({
+          message: 'Duplicate payment webhook: This event has already been processed.',
+          event_id,
+          status: existingEvent.status
+        });
+      }
+    }
 
     // 1. Explicit Webhook Event Type Handling
-    // 1a. Handle refund events safely without confirming bookings
+    // 1a. Handle refund events safely with locking, amount verification & deduplication
     if (eventType === 'refund.processed' || eventType === 'refund.created') {
       const refundBookingId = payload.booking_id || refundEntity.notes?.booking_id || paymentEntity.notes?.booking_id;
+      const refundPaymentId = refundEntity.payment_id || paymentEntity.id || payload.payment_id;
+      const refundId = refundEntity.id || payload.refund_id || null;
+      const refundAmount = refundEntity.amount !== undefined
+        ? Number(refundEntity.amount) / 100
+        : (payload.amount !== undefined ? Number(payload.amount) : null);
+
       if (refundBookingId) {
         await sequelize.transaction(async (t) => {
-          await Booking.update(
-            { payment_status: 'Refunded', booking_status: 'Cancelled' },
-            { where: { id: refundBookingId }, transaction: t }
-          );
-          await Transaction.update(
-            { status: PAYMENT_STATUSES.REFUNDED },
-            { where: { booking_id: refundBookingId }, transaction: t }
-          );
+          const lockedBooking = await Booking.findByPk(refundBookingId, { lock: t.LOCK.UPDATE, transaction: t });
+          if (lockedBooking) {
+            const txnWhere = refundPaymentId
+              ? { booking_id: refundBookingId, payment_id: refundPaymentId }
+              : { booking_id: refundBookingId, status: [PAYMENT_STATUSES.SUCCESS, PAYMENT_STATUSES.REFUND_PENDING] };
+            const txn = await Transaction.findOne({ where: txnWhere, lock: t.LOCK.UPDATE, transaction: t });
+            const isFullRefund = refundAmount === null || Math.abs(refundAmount - Number(lockedBooking.ticket_fare)) <= 0.01 || refundAmount >= Number(lockedBooking.ticket_fare);
+
+            if (txn) {
+              txn.status = PAYMENT_STATUSES.REFUNDED;
+              if (refundId && !txn.refund_id) txn.refund_id = refundId;
+              if (refundAmount !== null) txn.refund_amount = refundAmount;
+              await txn.save({ transaction: t });
+            }
+
+            if (isFullRefund && lockedBooking.payment_status !== 'Refunded') {
+              await transitionBookingState({
+                bookingId: lockedBooking.id,
+                targetBookingStatus: lockedBooking.booking_status === 'Expired' ? 'Expired' : 'Cancelled',
+                targetPaymentStatus: 'Refunded',
+                actor: { id: 1, role: 'WEBHOOK_GATEWAY' },
+                reason: `Gateway ${eventType} webhook ${refundId || ''}`,
+                existingTransaction: t
+              });
+            }
+          }
+
+          if (event_id) {
+            await ProcessedWebhookEvent.create({
+              event_id,
+              event_type: eventType,
+              provider: 'razorpay',
+              order_id: orderEntity.id || paymentEntity.order_id || null,
+              payment_id: refundPaymentId || null,
+              payload_hash: payloadHash,
+              status: 'refund_processed'
+            }, { transaction: t });
+          }
         });
       }
       return res.status(200).json({ message: 'Refund webhook acknowledged and processed.' });
     }
 
-    // 1b. Handle payment.failed safely without confirming bookings
+    // 1b. Handle payment.failed safely without corrupting newer retry orders
     if (eventType === 'payment.failed') {
       const failedBookingId = payload.booking_id || paymentEntity.notes?.booking_id;
-      if (failedBookingId) {
-        await Transaction.update(
-          { status: 'Failed' },
-          { where: { booking_id: failedBookingId, status: 'Pending' } }
-        );
-      }
+      const failedOrderId = payload.order_id || paymentEntity.order_id || orderEntity.id;
+      const failedPaymentId = payload.payment_id || paymentEntity.id;
+
+      await sequelize.transaction(async (t) => {
+        if (failedBookingId || failedOrderId) {
+          const txnWhere = { status: PAYMENT_STATUSES.PENDING };
+          if (failedOrderId) txnWhere.order_id = failedOrderId;
+          else if (failedBookingId) txnWhere.booking_id = failedBookingId;
+
+          await Transaction.update(
+            {
+              status: PAYMENT_STATUSES.FAILED,
+              ...(failedPaymentId ? { payment_id: failedPaymentId } : {})
+            },
+            { where: txnWhere, transaction: t }
+          );
+        }
+
+        if (event_id) {
+          await ProcessedWebhookEvent.create({
+            event_id,
+            event_type: eventType,
+            provider: 'razorpay',
+            order_id: failedOrderId || null,
+            payment_id: failedPaymentId || null,
+            payload_hash: payloadHash,
+            status: 'payment_failed'
+          }, { transaction: t });
+        }
+      });
       return res.status(200).json({ message: 'Payment failure webhook recorded; booking remains unpaid.' });
     }
 
@@ -499,30 +587,19 @@ const handlePaymentWebhook = async (req, res) => {
       });
     }
 
-    const event_id = payload.event_id || payload.id || (paymentEntity.id ? `evt_${paymentEntity.id}` : null);
-    const booking_id = payload.booking_id || paymentEntity.notes?.booking_id;
-    const order_id = payload.order_id || paymentEntity.order_id;
+    const booking_id = payload.booking_id || paymentEntity.notes?.booking_id || orderEntity.notes?.booking_id;
+    const order_id = payload.order_id || paymentEntity.order_id || orderEntity.id;
     const payment_id = payload.payment_id || payload.transaction_id || paymentEntity.id;
-    const currency = payload.currency || paymentEntity.currency || 'INR';
+    const currency = payload.currency || paymentEntity.currency || orderEntity.currency || 'INR';
 
-    let rawAmount = payload.amount !== undefined ? payload.amount : paymentEntity.amount;
+    let rawAmount = payload.amount !== undefined
+      ? payload.amount
+      : (paymentEntity.amount !== undefined ? paymentEntity.amount : orderEntity.amount_paid || orderEntity.amount);
     // If amount is in paise (standard Razorpay), convert to Rupees
-    if (paymentEntity.amount && payload.amount === undefined) {
+    if ((paymentEntity.amount !== undefined || orderEntity.amount !== undefined) && payload.amount === undefined) {
       rawAmount = Number(rawAmount) / 100;
     }
     const amount = rawAmount !== undefined ? Number(rawAmount) : undefined;
-
-    // 1. Idempotency Check: Event ID in ProcessedWebhookEvent
-    if (event_id) {
-      const existingEvent = await ProcessedWebhookEvent.findOne({ where: { event_id } });
-      if (existingEvent) {
-        return res.status(200).json({
-          message: 'Duplicate payment webhook: This event has already been processed.',
-          event_id,
-          status: existingEvent.status
-        });
-      }
-    }
 
     if (!booking_id) {
       return res.status(400).json({ message: 'Unauthorized booking ID: booking_id is required.' });
@@ -679,8 +756,6 @@ const handlePaymentWebhook = async (req, res) => {
       }
     }
 
-    const payloadHash = crypto.createHash('sha256').update(rawPayloadBytes).digest('hex');
-
     // 6. Concurrency-safe atomic state transition
     await sequelize.transaction(async (t) => {
       const lockedBooking = await Booking.findByPk(booking_id, { lock: t.LOCK.UPDATE, transaction: t });
@@ -771,6 +846,9 @@ const handlePaymentWebhook = async (req, res) => {
 
     return res.status(200).json({ message: 'Payment webhook processed and booking confirmed.' });
   } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(200).json({ message: 'Duplicate payment webhook: Event already recorded concurrently.' });
+    }
     if (error.message.startsWith('STATE_CONFLICT') ||
         error.message.startsWith('UNKNOWN_PAYMENT_ORDER') ||
         error.message.startsWith('ORDER_MISMATCH') ||
@@ -850,7 +928,7 @@ async function computeCancellationRefund(booking, paidAmount) {
   return { refundAmount, cancellationCharge, policyTier, hoursBeforeDeparture };
 }
 
-const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }) => {
+const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason, allowPendingRetry = false }) => {
   if (!booking_id) {
     const err = new Error('booking_id is required.');
     err.statusCode = 400;
@@ -877,8 +955,14 @@ const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }
     throw err;
   }
 
-  // Rule: Never report a refund as completed unless the booking was actually PAID or in Refund Pending
-  if (booking.payment_status !== 'Paid' && booking.payment_status !== 'Refund Pending') {
+  if (!allowPendingRetry && booking.payment_status === 'Refund Pending') {
+    const err = new Error('Refund already in progress for this booking.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Rule: Never report a refund as completed unless the booking was actually PAID or in Refund Pending retry
+  if (booking.payment_status !== 'Paid' && (!allowPendingRetry || booking.payment_status !== 'Refund Pending')) {
     const err = new Error('Cannot process refund: No successful payment exists for this booking. Current status: ' + booking.payment_status);
     err.statusCode = 400;
     throw err;
@@ -897,11 +981,20 @@ const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }
       err.statusCode = 400;
       throw err;
     }
+    if (!allowPendingRetry && lockedBooking.payment_status === 'Refund Pending') {
+      const err = new Error('REFUND_IN_PROGRESS: Another refund request is already processing.');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const allowedTxnStatuses = allowPendingRetry
+      ? [PAYMENT_STATUSES.SUCCESS, PAYMENT_STATUSES.REFUND_PENDING]
+      : [PAYMENT_STATUSES.SUCCESS];
 
     const transaction = await Transaction.findOne({
-      where: { 
-        booking_id, 
-        status: [PAYMENT_STATUSES.SUCCESS, PAYMENT_STATUSES.REFUND_PENDING] 
+      where: {
+        booking_id,
+        status: allowedTxnStatuses
       },
       lock: t.LOCK.UPDATE,
       transaction: t
@@ -919,19 +1012,24 @@ const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }
       throw err;
     }
 
-    // Anti-race condition: If already actively in flight with gateway or completed, reject concurrent duplicate
-    if (transaction.status === PAYMENT_STATUSES.REFUND_PENDING && transaction.refund_id) {
+    // Anti-race condition: reject concurrent duplicate if already in flight
+    if (transaction.status === PAYMENT_STATUSES.REFUND_PENDING && (!allowPendingRetry || transaction.refund_id)) {
       const err = new Error('ALREADY_REFUNDED');
       err.statusCode = 400;
       throw err;
     }
 
+    const previousBookingStatus = lockedBooking.booking_status;
+    const previousPaymentStatus = lockedBooking.payment_status;
+
     const refundCalc = await computeCancellationRefund(lockedBooking, transaction.amount);
     const refundAmount = refundCalc.refundAmount;
 
-    // Atomically claim the refund in progress
+    // Atomically claim the refund in progress without overwriting Expired status
     lockedBooking.payment_status = 'Refund Pending';
-    lockedBooking.booking_status = 'Cancelled';
+    if (lockedBooking.booking_status !== 'Expired') {
+      lockedBooking.booking_status = 'Cancelled';
+    }
     await lockedBooking.save({ transaction: t });
 
     transaction.status = PAYMENT_STATUSES.REFUND_PENDING;
@@ -941,6 +1039,8 @@ const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }
       transactionId: transaction.id,
       paymentId: transaction.payment_id,
       paymentMethod: transaction.payment_method,
+      previousBookingStatus,
+      previousPaymentStatus,
       refundAmount,
       cancellationCharge: refundCalc.cancellationCharge,
       policyTier: refundCalc.policyTier
@@ -974,11 +1074,19 @@ const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }
       isSimulated = false;
     } catch (gwErr) {
       console.error('[Gateway Refund API Failed]:', gwErr.response?.data || gwErr.message);
-      // Rollback state back to Paid / Confirmed on gateway rejection so user/operator can retry
+      // Revert back to the exact prior booking/payment statuses (never restore Expired to Confirmed)
       try {
         await sequelize.transaction(async (tRevert) => {
-          await Booking.update({ payment_status: 'Paid', booking_status: 'Confirmed' }, { where: { id: booking_id }, transaction: tRevert });
-          await Transaction.update({ status: PAYMENT_STATUSES.SUCCESS }, { where: { id: claimResult.transactionId }, transaction: tRevert });
+          const revertBookingStatus = claimResult.previousBookingStatus === 'Expired' ? 'Expired' : 'Confirmed';
+          const revertPaymentStatus = claimResult.previousPaymentStatus === 'Refund Pending' ? 'Refund Pending' : 'Paid';
+          await Booking.update(
+            { payment_status: revertPaymentStatus, booking_status: revertBookingStatus },
+            { where: { id: booking_id }, transaction: tRevert }
+          );
+          await Transaction.update(
+            { status: claimResult.previousPaymentStatus === 'Refund Pending' ? PAYMENT_STATUSES.REFUND_PENDING : PAYMENT_STATUSES.SUCCESS },
+            { where: { id: claimResult.transactionId }, transaction: tRevert }
+          );
         });
       } catch (revErr) {
         logger.error({ error: revErr.message }, '[Refund Rollback Error]: Failed to revert state');
@@ -995,24 +1103,24 @@ const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }
     refundId = `rfnd_sim_${crypto.randomBytes(10).toString('hex')}`;
   }
 
-  // Phase 3: Finalize state in a short atomic DB transaction
+  // Phase 3: Finalize state in a short locked atomic DB transaction
   await sequelize.transaction(async (tFinal) => {
-    await Transaction.update({
-      status: PAYMENT_STATUSES.REFUNDED,
-      refund_id: refundId,
-      refund_amount: claimResult.refundAmount
-    }, {
-      where: { id: claimResult.transactionId },
-      transaction: tFinal
-    });
+    const lockedTxn = await Transaction.findByPk(claimResult.transactionId, { lock: tFinal.LOCK.UPDATE, transaction: tFinal });
+    if (lockedTxn) {
+      lockedTxn.status = PAYMENT_STATUSES.REFUNDED;
+      lockedTxn.refund_id = refundId;
+      lockedTxn.refund_amount = claimResult.refundAmount;
+      await lockedTxn.save({ transaction: tFinal });
+    }
 
-    await Booking.update({
-      payment_status: 'Refunded',
-      booking_status: 'Cancelled'
-    }, {
-      where: { id: booking_id },
-      transaction: tFinal
-    });
+    const lockedBookingFinal = await Booking.findByPk(booking_id, { lock: tFinal.LOCK.UPDATE, transaction: tFinal });
+    if (lockedBookingFinal) {
+      lockedBookingFinal.payment_status = 'Refunded';
+      if (lockedBookingFinal.booking_status !== 'Expired') {
+        lockedBookingFinal.booking_status = 'Cancelled';
+      }
+      await lockedBookingFinal.save({ transaction: tFinal });
+    }
 
     await PaymentLog.create({
       user_id: userId || booking.user_id,
@@ -1033,7 +1141,7 @@ const executeRefundCore = async ({ booking_id, userId, role, adminRole, reason }
     cancellation_charge: claimResult.cancellationCharge,
     policy_tier: claimResult.policyTier,
     simulated: isSimulated,
-    gateway_confirmed: !isSimulated
+    gateway_confirmed: Boolean(!isSimulated && claimResult.refundAmount > 0)
   };
 };
 

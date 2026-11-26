@@ -92,7 +92,7 @@ export default function DestinationPage() {
     const fetchHotels = async () => {
       setLoadingHotels(true);
       try {
-        const res = await api.get(`/api/hotels/search?destination=${encodeURIComponent(dest.name)}&limit=6`);
+        const res = await api.get(`/hotels/search?destination=${encodeURIComponent(dest.name)}&limit=6`);
         if (isMounted && res.data && res.data.hotels && res.data.hotels.length > 0) {
           setLiveHotels(res.data.hotels);
         } else {

@@ -80,7 +80,7 @@ jobs:
           cd "Ai travel assistant/backend"
           node seed_runner.js
 
-      - name: Run Core Security & Regression Test Suites
+      - name: Run All 27 Backend Security & Regression Test Suites
         env:
           NODE_ENV: test
           DB_HOST: 127.0.0.1
@@ -89,20 +89,16 @@ jobs:
           DB_PASSWORD: testpassword123
           DB_NAME: traveliq
           JWT_SECRET: ci_test_jwt_secret_key_minimum_32_characters_long_1234
+          JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_key_min_32_chars_long_5678
           INTERNAL_SERVICE_KEY: ci_test_internal_svc_token_secure_2026
+          RAZORPAY_WEBHOOK_SECRET: ci_test_razorpay_webhook_secret_2026
         run: |
           cd "Ai travel assistant/backend"
-          node tests/authIsolationRegression.test.js
-          node tests/paymentVerification.test.js
-          node tests/roleHierarchy.test.js
-          node tests/securityHardening.test.js
-          node tests/hotelReservationIntegrity.test.js
-          node tests/n8nPromptInjection.test.js
-          node tests/bookingCreationRegression.test.js
+          npm test
 
-  # ─── 3. Frontend Production Build & Code-Splitting Verification ───
+  # ─── 3. Frontend Production Build & Lint Verification ───
   frontend-build:
-    name: Frontend Production Build Check
+    name: Frontend Lint & Production Build Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -117,6 +113,11 @@ jobs:
         run: |
           cd "Ai travel assistant/frontend"
           npm ci
+
+      - name: Lint Frontend Source (Fail on Errors)
+        run: |
+          cd "Ai travel assistant/frontend"
+          npm run lint -- --quiet
 
       - name: Build Production Assets (Vite)
         run: |

@@ -33,7 +33,8 @@ async function checkPwnedPassword(password) {
 }
 
 async function verifyTurnstile(token) {
-    if (!process.env.TURNSTILE_SECRET_KEY || !token) return true; // Bypass if not configured
+    if (!process.env.TURNSTILE_SECRET_KEY) return true; // Bypass ONLY if Turnstile is not configured
+    if (!token || typeof token !== 'string' || !token.trim()) return false;
     try {
         const res = await axios.post('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
             secret: process.env.TURNSTILE_SECRET_KEY,
@@ -379,20 +380,15 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password.' });
         }
 
-        // ─── Account status checks ───
+        // ─── Account status checks (do NOT mutate account state prior to password verification) ───
         if (user.account_status === 'deleted') {
             return res.status(403).json({ message: 'This account has been permanently deleted. Contact support for assistance.' });
         }
-
-        if (user.account_status === 'pending_verification') {
-            user.account_status = 'active';
-            user.email_verified = true;
-            await user.save();
+        if (user.account_status === 'suspended') {
+            return res.status(403).json({ message: 'This account has been suspended by an administrator.' });
         }
-
-        if (user.account_status === 'deactivated') {
-            // Reactivate on login attempt
-            user.account_status = 'active';
+        if (user.account_status === 'pending_verification') {
+            return res.status(403).json({ message: 'Account verification required. Please verify your email before logging in.' });
         }
 
         // ─── Brute-force lockout check ───
@@ -435,7 +431,10 @@ const loginUser = async (req, res) => {
             });
         }
 
-        // ─── Successful password → reset counters (persisted in createSessionAndLog or before 2FA challenge) ───
+        // ─── Successful password → reactivate deactivated account and reset lockout counters ───
+        if (user.account_status === 'deactivated') {
+            user.account_status = 'active';
+        }
         user.failed_attempts = 0;
         if (user.suspended_until) user.suspended_until = null;
 
@@ -460,12 +459,12 @@ const loginUser = async (req, res) => {
             }
         }
 
-        // Check if 2FA (Email OTP) is enabled for this user in user_security
-        let isTwoFactorEnabled = false;
+        // Check if 2FA (Email OTP) is enabled for this user in user_security or user record
+        let isTwoFactorEnabled = Boolean(user.two_factor_enabled);
         let recoveryEmail = null;
         const sec = await UserSecurity.findOne({ where: { user_id: user.id } });
         if (sec) {
-            isTwoFactorEnabled = sec.two_factor_enabled;
+            isTwoFactorEnabled = Boolean(sec.two_factor_enabled || user.two_factor_enabled);
             recoveryEmail = sec.recovery_email;
         }
 
@@ -599,7 +598,7 @@ const adminLogin = async (req, res) => {
             });
         }
 
-        if (user.account_status === 'deleted' || user.account_status === 'deactivated') {
+        if (user.account_status === 'deleted' || user.account_status === 'deactivated' || user.account_status === 'suspended') {
             return res.status(403).json({ message: 'This administrator account has been disabled.' });
         }
 
@@ -632,11 +631,11 @@ const adminLogin = async (req, res) => {
         if (user.suspended_until) user.suspended_until = null;
         await user.save();
 
-        // Check if 2FA (Email OTP) is enabled for admin in user_security
-        let isTwoFactorEnabled = false;
+        // Check if 2FA (Email OTP) is enabled for admin in user_security or user record
+        let isTwoFactorEnabled = Boolean(user.two_factor_enabled);
         const sec = await UserSecurity.findOne({ where: { user_id: user.id } });
         if (sec) {
-            isTwoFactorEnabled = sec.two_factor_enabled;
+            isTwoFactorEnabled = Boolean(sec.two_factor_enabled || user.two_factor_enabled);
         }
 
         if (isTwoFactorEnabled) {
@@ -819,6 +818,11 @@ const registerAdmin = async (req, res) => {
             account_status: 'active',
             role: 'admin',
             admin_role: 'admin' // Newly registered admins receive standard admin role
+        });
+
+        await UserSecurity.findOrCreate({
+            where: { user_id: user.id },
+            defaults: { user_id: user.id, two_factor_enabled: true }
         });
 
         await SecurityAlert.create({
@@ -1110,6 +1114,9 @@ const passkeyLoginVerify = async (req, res) => {
         if (!user || user.account_status !== 'active') {
             return res.status(403).json({ message: 'Account is not authorized or is inactive.' });
         }
+        if (user.suspended_until && new Date() < new Date(user.suspended_until)) {
+            return res.status(403).json({ message: 'Account is temporarily locked due to failed login attempts.' });
+        }
 
         // Success! Authenticate user and create session
         const activeDeviceId = deviceId || crypto.randomUUID();
@@ -1240,8 +1247,19 @@ const refreshSession = async (req, res) => {
         }
 
         const user = await User.findByPk(rtRecord.user_id);
-        if (!user || user.account_status !== 'active') {
+        if (!user || user.account_status !== 'active' || (user.suspended_until && new Date() < new Date(user.suspended_until))) {
             return res.status(403).json({ message: 'User account is inactive or suspended.' });
+        }
+
+        if (decoded.sessionId) {
+            const activeSession = await Session.findOne({
+                where: { session_id: decoded.sessionId, user_id: user.id }
+            });
+            if (!activeSession || new Date() > new Date(activeSession.expires_at)) {
+                res.clearCookie('accessToken');
+                res.clearCookie('refreshToken', { path: '/api/auth' });
+                return res.status(401).json({ message: 'Session has been revoked or expired.' });
+            }
         }
 
         // 1. Invalidate/revoke current refresh token immediately (rotation)

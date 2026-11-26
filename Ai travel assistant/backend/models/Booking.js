@@ -23,7 +23,7 @@ const Booking = sequelize.define('Booking', {
   },
   payment_status: {
     type: DataTypes.STRING,
-    defaultValue: 'Pending'
+    defaultValue: 'Unpaid'
   },
   booking_status: {
     type: DataTypes.STRING,

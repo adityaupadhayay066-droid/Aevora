@@ -39,9 +39,6 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
   // Net Banking fields
   const [selectedBank, setSelectedBank] = useState('HDFC');
 
-  // Sandbox fields
-  const [sandboxToken, setSandboxToken] = useState('tiq_test_token_' + Math.random().toString(36).substring(2, 10));
-
   const [copiedTxn, setCopiedTxn] = useState(false);
   const canvasRef = useRef(null);
   const otpInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null), useRef(null), useRef(null)];
@@ -56,7 +53,7 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
   useEffect(() => {
     if (isOpen) {
       setModalStage('selection');
-      setOtpValue(['8', '4', '9', '2', '0', '1']);
+      setOtpValue(['', '', '', '', '', '']);
       setOtpError('');
       setTransactionResult(null);
       setProgress(0);
@@ -162,12 +159,6 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
       return;
     }
 
-    // If Developer Sandbox bypass is chosen, direct verify bypass
-    if (activeTab === 'sandbox') {
-      executeVerification(null, '849201', true);
-      return;
-    }
-
     setModalStage('initiating');
     setProcessingStep('Connecting to Banking Gateway & Generating 3D Secure 2FA Challenge...');
 
@@ -175,7 +166,7 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
       const initRes = await api.post('/developer/payment/initiate', {
         plan_tier: isTopUp ? undefined : item.key,
         top_up_quota: isTopUp ? item.quotaCount : undefined,
-        top_up_name: item.name,
+        top_up_name: isTopUp ? item.key : undefined,
         payment_method: activeTab.toUpperCase(),
         amount: totalAmount
       });
@@ -311,13 +302,6 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
       clearTimeout(step2);
       clearTimeout(step3);
     };
-  };
-
-  // Auto-Fill Test OTP
-  const autoFillTestOtp = () => {
-    setOtpValue(['8', '4', '9', '2', '0', '1']);
-    setOtpError('');
-    toast.success('⚡ Test 2FA OTP 849201 Loaded');
   };
 
   // Printable Invoice
@@ -566,12 +550,11 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
               </div>
 
               {/* Payment Tabs */}
-              <div className="grid grid-cols-4 gap-1.5 bg-[#F7F8FA] dark:bg-[#121921] p-1 rounded-2xl border border-[#E3E7EA] dark:border-[#293644]">
+              <div className="grid grid-cols-3 gap-1.5 bg-[#F7F8FA] dark:bg-[#121921] p-1 rounded-2xl border border-[#E3E7EA] dark:border-[#293644]">
                 {[
                   { id: 'card', label: '💳 Card' },
                   { id: 'upi', label: '📱 UPI / QR' },
-                  { id: 'netbanking', label: '🏦 NetBank' },
-                  { id: 'sandbox', label: '⚡ Bypass' }
+                  { id: 'netbanking', label: '🏦 NetBank' }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -718,22 +701,6 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
                 </div>
               )}
 
-              {/* TAB 4: SANDBOX BYPASS */}
-              {activeTab === 'sandbox' && (
-                <div className="space-y-3 bg-[#F7F8FA] dark:bg-[#121921] p-4 rounded-2xl border border-[#E3E7EA] dark:border-[#293644]">
-                  <div className="flex items-center gap-2 text-[#244C66] dark:text-[#F0F4F7] font-bold text-xs">
-                    <Terminal className="w-4 h-4 text-emerald-500" />
-                    <span>Instant Direct Mock Webhook Token</span>
-                  </div>
-                  <p className="text-[11px] text-[#66736F] dark:text-[#A3B0AB]">
-                    Directly bypass verification prompt and execute immediate webhook payment elevation.
-                  </p>
-                  <div className="bg-[#121921] text-emerald-400 p-2 rounded-xl font-mono text-xs break-all">
-                    {sandboxToken}
-                  </div>
-                </div>
-              )}
-
               {/* Proceed to Authenticate */}
               <div className="pt-2">
                 <button
@@ -809,15 +776,8 @@ export default function DeveloperPaymentModal({ isOpen, onClose, item, org, onPa
                 </div>
               )}
 
-              {/* Helpers: Auto-fill test code and Resend countdown */}
-              <div className="flex items-center justify-between text-xs pt-1 px-1">
-                <button
-                  type="button"
-                  onClick={autoFillTestOtp}
-                  className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                >
-                  <Zap className="w-3.5 h-3.5" /> Auto-Fill Test OTP (849201)
-                </button>
+              {/* Resend countdown */}
+              <div className="flex items-center justify-end text-xs pt-1 px-1">
 
                 <div className="text-[11px] text-[#66736F] dark:text-[#A3B0AB] flex items-center gap-1">
                   <Clock className="w-3 h-3" />

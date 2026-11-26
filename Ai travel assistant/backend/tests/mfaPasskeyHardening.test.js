@@ -333,7 +333,9 @@ async function runMfaPasskeyHardeningTests() {
   if (failed > 0) process.exit(1);
 }
 
-runMfaPasskeyHardeningTests().catch(err => {
-  console.error('Test execution failed:', err);
-  process.exit(1);
-});
+runMfaPasskeyHardeningTests()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Test execution failed:', err);
+    process.exit(1);
+  });

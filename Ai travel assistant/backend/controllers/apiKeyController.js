@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { Organization, ApiKey, ApiUsageLog } = require('../models');
 const { generateKeySecret, PLAN_CONFIGS } = require('../services/apiKeyService');
+const { sendEmail } = require('../services/emailService');
 const { Op, fn, col } = require('sequelize');
 
 // Trusted server-side catalog for Quota Top-Up Boosters
@@ -256,16 +257,45 @@ exports.getUsageAnalytics = async (req, res) => {
   }
 };
 
-// In-memory cache for pending payment verification intents
+// In-memory cache for pending payment verification intents (with TTL & cap)
 const pendingPaymentIntents = new Map();
+const MAX_PENDING_INTENTS = 2000;
+
+function pruneExpiredPaymentIntents() {
+  const now = Date.now();
+  for (const [k, v] of pendingPaymentIntents.entries()) {
+    if (v.expiresAt < now) pendingPaymentIntents.delete(k);
+  }
+  if (pendingPaymentIntents.size >= MAX_PENDING_INTENTS) {
+    const oldestKey = pendingPaymentIntents.keys().next().value;
+    if (oldestKey) pendingPaymentIntents.delete(oldestKey);
+  }
+}
+
+function sanitizeApiKeyResponse(apiKey) {
+  if (!apiKey) return null;
+  const plain = typeof apiKey.toJSON === 'function' ? apiKey.toJSON() : { ...apiKey };
+  delete plain.key_hash;
+  return plain;
+}
 
 /**
  * Step 1: Initiate Developer Payment Intent (Creates 2FA / 3DS Verification Challenge)
  */
 exports.initiateDeveloperPayment = async (req, res) => {
   try {
+    if (process.env.NODE_ENV === 'production' && (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET)) {
+      return res.status(503).json({
+        success: false,
+        error: 'Developer payment checkout is unavailable until payment gateway credentials are configured.'
+      });
+    }
+
     const { plan_tier, top_up_name, payment_method } = req.body;
     const org = await getUserOrganization(req.user);
+    if (!org.is_active) {
+      return res.status(403).json({ success: false, error: 'Organization is deactivated.' });
+    }
 
     let authoritativeAmount = 0;
     let authoritativeQuota = null;
@@ -305,6 +335,7 @@ exports.initiateDeveloperPayment = async (req, res) => {
       });
     }
 
+    pruneExpiredPaymentIntents();
     const orderId = `TIQ_ORD_${Date.now()}_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const challengeCode = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -319,11 +350,23 @@ exports.initiateDeveloperPayment = async (req, res) => {
       payment_method: payment_method || 'CARD',
       amount: authoritativeAmount,
       challengeCode,
+      failedAttempts: 0,
       expiresAt,
       status: 'AWAITING_VERIFICATION'
     };
 
     pendingPaymentIntents.set(orderId, intentData);
+
+    // Deliver verification challenge via email service (non-blocking in test/dev)
+    if (req.user?.email) {
+      sendEmail({
+        to: req.user.email,
+        subject: 'AEVORA Developer Billing Verification Code',
+        otpCode: challengeCode,
+        purpose: 'developer_billing_3ds',
+        html: `<p>Your developer billing verification code for order <strong>${orderId}</strong> ($${authoritativeAmount}) is <strong>${challengeCode}</strong>. Valid for 10 minutes.</p>`
+      }).catch(() => {});
+    }
 
     // Generate dynamic mask for actual logged in user's phone & email
     const rawPhone = req.user?.phone_number || '';
@@ -357,8 +400,11 @@ exports.initiateDeveloperPayment = async (req, res) => {
  */
 exports.verifyDeveloperPayment = async (req, res) => {
   try {
-    const { order_id, verification_code, payment_details } = req.body;
+    const { order_id, verification_code, gateway_payment_id, gateway_signature, payment_details } = req.body;
     const org = await getUserOrganization(req.user);
+    if (!org.is_active) {
+      return res.status(403).json({ success: false, error: 'Organization is deactivated.' });
+    }
 
     if (!order_id) {
       return res.status(400).json({ success: false, error: 'order_id is required for payment verification.' });
@@ -381,6 +427,23 @@ exports.verifyDeveloperPayment = async (req, res) => {
       });
     }
 
+    // In production, require real gateway HMAC signature verification (never OTP-only settlement)
+    if (process.env.NODE_ENV === 'production') {
+      const gwSecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!gwSecret || !gateway_payment_id || !gateway_signature) {
+        return res.status(400).json({
+          success: false,
+          error: 'Verified payment gateway signature is required to activate paid developer plans in production.'
+        });
+      }
+      const expectedSig = crypto.createHmac('sha256', gwSecret).update(`${order_id}|${gateway_payment_id}`).digest('hex');
+      const bufA = Buffer.from(expectedSig);
+      const bufB = Buffer.from(String(gateway_signature));
+      if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+        return res.status(400).json({ success: false, error: 'Invalid payment gateway signature.' });
+      }
+    }
+
     const submittedCode = String(verification_code || '').trim();
     if (!submittedCode) {
       return res.status(400).json({
@@ -389,11 +452,19 @@ exports.verifyDeveloperPayment = async (req, res) => {
       });
     }
 
-    // Timing-safe cryptographic comparison against server-side intent challenge code
+    // Timing-safe cryptographic comparison with brute-force threshold (max 5 attempts)
     const bufExpected = Buffer.from(intent.challengeCode);
     const bufActual = Buffer.from(submittedCode);
 
     if (bufExpected.length !== bufActual.length || !crypto.timingSafeEqual(bufExpected, bufActual)) {
+      intent.failedAttempts = (intent.failedAttempts || 0) + 1;
+      if (intent.failedAttempts >= 5) {
+        pendingPaymentIntents.delete(order_id);
+        return res.status(429).json({
+          success: false,
+          error: 'Too many failed verification attempts. Payment session invalidated.'
+        });
+      }
       return res.status(400).json({
         success: false,
         error: 'Invalid Verification Code! Verification failed.'
@@ -405,19 +476,19 @@ exports.verifyDeveloperPayment = async (req, res) => {
 
     const plan_tier = intent.plan_tier;
     const top_up_quota = intent.top_up_quota;
-    const transactionId = `TIQ-DEV-VERIFIED-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const transactionId = gateway_payment_id || `TIQ-DEV-VERIFIED-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const bankAuthCode = `AUTH-${crypto.randomInt(100000, 1000000)}`;
     const digitalSignature = crypto.createHash('sha256').update(`${transactionId}-${org.id}-${Date.now()}`).digest('hex');
 
-    // Handle Top-Up Booster Activation strictly using server-persisted quota
+    // Handle Top-Up Booster Activation atomically
     if (top_up_quota) {
       const additionalQuota = parseInt(top_up_quota, 10);
       if (isNaN(additionalQuota) || additionalQuota <= 0) {
         return res.status(400).json({ success: false, error: 'Invalid top-up quota amount' });
       }
 
-      org.monthly_quota = (org.monthly_quota || 0) + additionalQuota;
-      await org.save();
+      await Organization.increment({ monthly_quota: additionalQuota }, { where: { id: org.id } });
+      await org.reload();
 
       return res.status(200).json({
         success: true,
@@ -564,7 +635,7 @@ exports.updateApiKey = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'API Key updated successfully',
-      apiKey
+      apiKey: sanitizeApiKeyResponse(apiKey)
     });
   } catch (err) {
     console.error('[updateApiKey Error]:', err);
@@ -636,17 +707,38 @@ exports.adminUpdateApiKey = async (req, res) => {
       return res.status(404).json({ success: false, error: 'API key not found' });
     }
 
-    if (name !== undefined) apiKey.name = name.trim();
-    if (rate_limit_per_minute !== undefined) apiKey.rate_limit_per_minute = parseInt(rate_limit_per_minute, 10);
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim() || name.trim().length > 100) {
+        return res.status(400).json({ success: false, error: 'API key name must be a non-empty string up to 100 characters.' });
+      }
+      apiKey.name = name.trim();
+    }
+    if (rate_limit_per_minute !== undefined) {
+      const parsedLimit = parseInt(rate_limit_per_minute, 10);
+      if (isNaN(parsedLimit) || parsedLimit <= 0 || parsedLimit > 100000) {
+        return res.status(400).json({ success: false, error: 'rate_limit_per_minute must be a positive integer.' });
+      }
+      apiKey.rate_limit_per_minute = parsedLimit;
+    }
     if (is_revoked !== undefined) apiKey.is_revoked = Boolean(is_revoked);
-    if (expires_at !== undefined) apiKey.expires_at = expires_at ? new Date(expires_at) : null;
+    if (expires_at !== undefined) {
+      if (expires_at === null || expires_at === '') {
+        apiKey.expires_at = null;
+      } else {
+        const parsedDate = new Date(expires_at);
+        if (isNaN(parsedDate.getTime())) {
+          return res.status(400).json({ success: false, error: 'Invalid expires_at timestamp.' });
+        }
+        apiKey.expires_at = parsedDate;
+      }
+    }
 
     await apiKey.save();
 
     return res.status(200).json({
       success: true,
       message: 'API Key modified successfully by Admin',
-      apiKey
+      apiKey: sanitizeApiKeyResponse(apiKey)
     });
   } catch (err) {
     console.error('[adminUpdateApiKey Error]:', err);
@@ -685,9 +777,26 @@ exports.adminUpdateOrganization = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Organization not found' });
     }
 
-    if (plan_tier !== undefined) org.plan_tier = plan_tier;
-    if (monthly_quota !== undefined) org.monthly_quota = parseInt(monthly_quota, 10);
-    if (used_quota !== undefined) org.used_quota = parseInt(used_quota, 10);
+    if (plan_tier !== undefined) {
+      if (!PLAN_CONFIGS[plan_tier]) {
+        return res.status(400).json({ success: false, error: 'Invalid plan_tier specified.' });
+      }
+      org.plan_tier = plan_tier;
+    }
+    if (monthly_quota !== undefined) {
+      const parsedQuota = parseInt(monthly_quota, 10);
+      if (isNaN(parsedQuota) || parsedQuota < 0) {
+        return res.status(400).json({ success: false, error: 'monthly_quota must be a non-negative integer.' });
+      }
+      org.monthly_quota = parsedQuota;
+    }
+    if (used_quota !== undefined) {
+      const parsedUsed = parseInt(used_quota, 10);
+      if (isNaN(parsedUsed) || parsedUsed < 0) {
+        return res.status(400).json({ success: false, error: 'used_quota must be a non-negative integer.' });
+      }
+      org.used_quota = parsedUsed;
+    }
     if (is_active !== undefined) org.is_active = Boolean(is_active);
 
     await org.save();

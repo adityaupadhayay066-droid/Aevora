@@ -527,7 +527,7 @@ export default function BookingModal({ train, onClose }) {
             amount: order.amount_in_paise || Math.round(totalFare * 100),
             currency: order.currency || 'INR',
             name: 'TravelIQ',
-            description: `Booking #${booking.booking_reference || booking.id} (${trip?.train_name || 'Travel Ticket'})`,
+            description: `Booking #${booking.booking_reference || booking.id} (${train?.train_name || train?.name || 'Travel Ticket'})`,
             order_id: order.order_id,
             prefill: {
               name: passengers[0]?.name || '',
