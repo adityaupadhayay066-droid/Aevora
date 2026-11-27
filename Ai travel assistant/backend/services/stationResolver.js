@@ -62,7 +62,7 @@ const CITY_CLUSTERS = [
     stationCodes: ['SBC', 'YPR', 'SMVB', 'BNC'],
     synonyms: [
       'bangalore', 'bengaluru', 'ksr bengaluru', 'yesvantpur', 'yeshwantpur',
-      'smvt bengaluru', 'bangalore cantt', 'sbc', 'ypr', 'smvb', 'bnc', 'banglore'
+      'smvt bengaluru', 'smvb', 'smvt', 'bangalore cantt', 'bangalore cant', 'sbc', 'ypr', 'smvb', 'bnc', 'banglore'
     ]
   },
   {
@@ -312,6 +312,15 @@ const APPROVED_STATION_ALIASES = {
   'bombay': { code: 'CSMT', name: 'MUMBAI CSMT', city: 'Mumbai' },
   'madras': { code: 'MAS', name: 'CHENNAI CENTRAL', city: 'Chennai' },
   'bangalore': { code: 'SBC', name: 'BENGALURU CITY JN', city: 'Bengaluru' },
+  'bangalore cant': { code: 'BNC', name: 'BANGALORE CANT', city: 'Bengaluru' },
+  'bangalore cantt': { code: 'BNC', name: 'BANGALORE CANT', city: 'Bengaluru' },
+  'smvb': { code: 'SMVB', name: 'SMVT BENGALURU', city: 'Bengaluru' },
+  'smvt bengaluru': { code: 'SMVB', name: 'SMVT BENGALURU', city: 'Bengaluru' },
+  'smvt': { code: 'SMVB', name: 'SMVT BENGALURU', city: 'Bengaluru' },
+  'yesvantpur': { code: 'YPR', name: 'YESVANTPUR JN', city: 'Bengaluru' },
+  'yeshwantpur': { code: 'YPR', name: 'YESVANTPUR JN', city: 'Bengaluru' },
+  'tatanagar': { code: 'TATA', name: 'TATANAGAR JN', city: 'Jamshedpur' },
+  'tatanagar jn': { code: 'TATA', name: 'TATANAGAR JN', city: 'Jamshedpur' },
   'trivandrum': { code: 'TVC', name: 'THIRUVANANTHAPURAM CENTRAL', city: 'Thiruvananthapuram' },
   'cochin': { code: 'ERS', name: 'ERNAKULAM JN', city: 'Kochi' },
   'baroda': { code: 'BRC', name: 'VADODARA JN', city: 'Vadodara' },

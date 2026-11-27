@@ -5,7 +5,7 @@ const AIRPORT_REGISTRY = {
   // Metro & Major International / Domestic Airport Hubs
   'DEL': { iata: 'DEL', name: 'Indira Gandhi International Airport', city: 'Delhi', lat: 28.5562, lng: 77.1000, aliases: ['delhi', 'new delhi', 'ndls', 'dli', 'nzm', 'anvt', 'dec'] },
   'BOM': { iata: 'BOM', name: 'Chhatrapati Shivaji Maharaj International Airport', city: 'Mumbai', lat: 19.0896, lng: 72.8656, aliases: ['mumbai', 'bombay', 'bct', 'cstm', 'csmt', 'bdts', 'ltt', 'bvi', 'dadar', 'panvel'] },
-  'BLR': { iata: 'BLR', name: 'Kempegowda International Airport', city: 'Bengaluru', lat: 13.1986, lng: 77.7066, aliases: ['bengaluru', 'bangalore', 'sbc', 'ypr', 'smvb', 'kjm', 'ynk'] },
+  'BLR': { iata: 'BLR', name: 'Kempegowda International Airport', city: 'Bengaluru', lat: 13.1986, lng: 77.7066, aliases: ['bengaluru', 'bangalore', 'sbc', 'ypr', 'smvb', 'kjm', 'ynk', 'bnc', 'bangalore cant', 'bangalore cantt'] },
   'MAA': { iata: 'MAA', name: 'Chennai International Airport', city: 'Chennai', lat: 12.9941, lng: 80.1709, aliases: ['chennai', 'madras', 'mas', 'ms', 'tbm', 'per'] },
   'CCU': { iata: 'CCU', name: 'Netaji Subhash Chandra Bose International Airport', city: 'Kolkata', lat: 22.6547, lng: 88.4467, aliases: ['kolkata', 'calcutta', 'hwh', 'sdah', 'koaa', 'shm', 'howrah', 'sealdah'] },
   'HYD': { iata: 'HYD', name: 'Rajiv Gandhi International Airport', city: 'Hyderabad', lat: 17.2403, lng: 78.4294, aliases: ['hyderabad', 'secunderabad', 'sc', 'kcg', 'hyb', 'lingampalli', 'lpi'] },

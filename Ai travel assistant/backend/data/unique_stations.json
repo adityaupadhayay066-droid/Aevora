@@ -68310,5 +68310,13 @@
     "longitude": 74.8082261529,
     "state": "India",
     "city": "Phlg"
+  },
+  {
+    "station_code": "SMVB",
+    "station_name": "SMVT BENGALURU",
+    "latitude": 13.0034,
+    "longitude": 77.6534,
+    "state": "Karnataka",
+    "city": "Bangalore"
   }
 ]

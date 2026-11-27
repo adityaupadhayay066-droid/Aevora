@@ -75,6 +75,9 @@ const ESSENTIAL_STATIONS = [
   // Southern Hub
   { station_code: 'MAS', station_name: 'CHENNAI CENTRAL', city: 'Chennai', state: 'Tamil Nadu', latitude: 13.0827, longitude: 80.2707 },
   { station_code: 'SBC', station_name: 'BANGALORE CITY JN', city: 'Bengaluru', state: 'Karnataka', latitude: 12.9780, longitude: 77.5683 },
+  { station_code: 'YPR', station_name: 'YESVANTPUR JN', city: 'Bengaluru', state: 'Karnataka', latitude: 13.0228, longitude: 77.5512 },
+  { station_code: 'SMVB', station_name: 'SMVT BENGALURU', city: 'Bengaluru', state: 'Karnataka', latitude: 13.0034, longitude: 77.6534 },
+  { station_code: 'BNC', station_name: 'BANGALORE CANT', city: 'Bengaluru', state: 'Karnataka', latitude: 12.9937, longitude: 77.5993 },
   { station_code: 'BZA', station_name: 'VIJAYAWADA JN', city: 'Vijayawada', state: 'Andhra Pradesh', latitude: 16.5193, longitude: 80.6305 },
   { station_code: 'SC', station_name: 'SECUNDERABAD JN', city: 'Hyderabad', state: 'Telangana', latitude: 17.4334, longitude: 78.5016 },
   { station_code: 'HYB', station_name: 'HYDERABAD DECCAN', city: 'Hyderabad', state: 'Telangana', latitude: 17.3916, longitude: 78.4735 },
