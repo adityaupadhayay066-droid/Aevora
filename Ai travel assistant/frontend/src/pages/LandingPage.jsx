@@ -15,6 +15,7 @@ import { resolveCityAndState, parseGuestsCount } from '../utils/cityStateResolve
 import Logo from '../components/brand/Logo';
 import { BRAND } from '../config/branding';
 import { handleImageFallback } from '../utils/imageFallback';
+import CinematicHero3D from '../components/CinematicHero3D';
 
 // Featured 8 Popular Destinations across India
 const POPULAR_DESTINATIONS = [
@@ -323,50 +324,41 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] dark:bg-[#121921] text-[#202A32] dark:text-[#F0F4F7] transition-colors">
+    <div className="min-h-screen bg-[#0B100D] text-[#F1F3ED] transition-colors">
 
       {/* ====================================================================
-          SECTION 3: HERO SECTION — EDITORIAL TRAVEL SEARCH
+          SECTION 3: CINEMATIC 3D HERO — EXPLORE BEYOND ROUTES
           ==================================================================== */}
-      <section className="relative bg-[#F7F8FA] dark:bg-[#121921] border-b border-[#E3E7EA] dark:border-[#293644] overflow-visible">
+      <section className="relative min-h-[90vh] flex flex-col justify-center border-b border-white/10 overflow-hidden pt-12 pb-20">
         
-        {/* Subtle, restrained background texture */}
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-10 overflow-hidden">
-          <img 
-            src="https://images.unsplash.com/photo-1506461883276-594a12b11cf3?auto=format&fit=crop&w=2000&q=80" 
-            alt="Scenic rail corridor"
-            className="w-full h-full object-cover object-center mix-blend-multiply"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=2000&q=80';
-            }}
-          />
-        </div>
+        {/* Three.js / React Three Fiber Mountain Landscape */}
+        <CinematicHero3D />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-14 sm:pb-16 overflow-visible">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           
           {/* Hero Headline & Supporting Statement */}
-          <div className="max-w-3xl mb-7 sm:mb-9 text-center sm:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#EEF2F4] dark:bg-[#1B242E] border border-[#E3E7EA] dark:border-[#293644] text-[#66737D] dark:text-[#9CAAB5] text-xs font-medium tracking-wide mb-3">
-              <span>AEVORA Intelligent Travel Assistant</span>
+          <div className="max-w-3xl mb-8 sm:mb-10 text-center sm:text-left">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#17221A]/80 border border-white/10 text-[#91B39A] text-xs font-semibold tracking-wider uppercase mb-4 backdrop-blur-md shadow-lg">
+              <span className="w-2 h-2 rounded-full bg-[#C4A77D] animate-pulse" />
+              <span>TravelIQ Intelligence Platform</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-5xl font-bold tracking-tight leading-tight text-[#202A32] dark:text-[#F0F4F7]">
-              Every journey starts <span className="text-[#244C66] dark:text-[#75A4C4]">smarter</span>.
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] text-[#F1F3ED] font-heading">
+              Explore <span className="font-editorial italic font-normal text-[#C4A77D]">Beyond</span> Routes.
             </h1>
 
-            <p className="mt-2.5 sm:mt-3 text-base sm:text-lg text-[#66737D] dark:text-[#9CAAB5] leading-relaxed max-w-2xl">
-              Discover better routes, compare verified trains, flights, and buses, and plan your journey with confidence.
+            <p className="mt-4 text-base sm:text-lg text-[#A6B1A7] leading-relaxed max-w-2xl font-sans">
+              Discover destinations, compare journeys and experience intelligent travel planning with TravelIQ.
             </p>
           </div>
 
           {/* ================================================================
-              STRUCTURED TRAVEL SEARCH BOOKING PANEL
+              STRUCTURED TRAVEL SEARCH BOOKING PANEL — DARK LUXURY GLASS
               ================================================================ */}
-          <div id="search-booking-panel" className="relative z-20 bg-white dark:bg-[#1B242E] rounded-xl shadow-xs border border-[#E3E7EA] dark:border-[#293644] text-[#202A32] dark:text-[#F0F4F7] overflow-visible">
+          <div id="search-booking-panel" className="relative z-20 glass-panel rounded-2xl shadow-2xl border border-white/10 text-[#F1F3ED] overflow-visible bg-[#17221A]/85 backdrop-blur-xl">
             
             {/* Category Tabs: Flights, Trains, Buses, Hotels */}
-            <div className="flex items-center border-b border-[#E3E7EA] dark:border-[#293644] bg-[#F7F8FA] dark:bg-[#162029] overflow-x-auto scrollbar-none px-2 pt-1.5 rounded-t-xl">
+            <div className="flex items-center border-b border-white/10 bg-[#111A14]/70 overflow-x-auto scrollbar-none px-3 pt-2 rounded-t-2xl">
               {[
                 { id: 'flights', label: 'Flights', icon: Plane, badge: 'Direct Air' },
                 { id: 'trains', label: 'Trains', icon: Train, badge: 'IRCTC Live' },
@@ -380,16 +372,15 @@ export default function LandingPage() {
                     key={tab.id}
                     onClick={() => {
                       setActiveTab(tab.id);
-                      window.dispatchEvent(new CustomEvent('aevora:set-tab', { detail: { tab: tab.id } }));
                       window.dispatchEvent(new CustomEvent('traveliq:set-tab', { detail: { tab: tab.id } }));
                     }}
-                    className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                       isSelected
-                        ? 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400 bg-white dark:bg-[#1B242E]'
-                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                        ? 'border-[#C4A77D] text-[#F1F3ED] bg-[#17221A]/90'
+                        : 'border-transparent text-[#A6B1A7] hover:text-[#F1F3ED]'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isSelected ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400'}`} />
+                    <Icon className={`w-4 h-4 ${isSelected ? 'text-[#C4A77D]' : 'text-[#6F8D76]'}`} />
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -578,13 +569,13 @@ export default function LandingPage() {
                     <button
                       type="submit"
                       disabled={isSearching}
-                      className="w-full h-[58px] rounded-xl bg-gradient-to-r from-[#244C66] to-[#1E3F54] hover:from-[#1B3A4F] hover:to-[#173040] dark:from-[#2A5978] dark:to-[#1E3F54] text-white font-bold text-sm tracking-wide shadow-md shadow-[#244C66]/20 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group whitespace-nowrap"
+                      className="w-full h-[58px] rounded-xl bg-[#315B40] hover:bg-[#3d6f4f] text-[#F1F3ED] font-bold text-sm tracking-wide shadow-lg shadow-[#315B40]/25 border border-[#91B39A]/20 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group whitespace-nowrap"
                     >
                       {isSearching ? (
                         <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <>
-                          <Search className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                          <Search className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 text-[#C4A77D]" />
                           <span>{activeTab === 'flights' ? 'Search Flights' : activeTab === 'buses' ? 'Search Buses' : 'Search Trains'}</span>
                         </>
                       )}
@@ -931,7 +922,7 @@ export default function LandingPage() {
               Smart Alternatives for Your Journey
             </h2>
             <p className="text-sm text-[#66737D] dark:text-[#9CAAB5] mt-1">
-              When direct trains or flights are waitlisted, AEVORA calculates reliable connecting journeys through verified interchange stations.
+              When direct trains or flights are waitlisted, TravelIQ calculates reliable connecting journeys through verified interchange stations.
             </p>
           </div>
 
@@ -983,7 +974,7 @@ export default function LandingPage() {
             {/* Smart Alternative Option */}
             <div className="lg:col-span-7 bg-white dark:bg-[#1B242E] rounded-xl p-5 border border-[#244C66] dark:border-[#75A4C4] shadow-xs flex flex-col justify-between relative overflow-hidden">
               <div className="absolute top-0 right-0 px-3 py-0.5 bg-slate-900 text-sky-400 text-[10px] font-bold rounded-bl-lg border-l border-b border-sky-500/30">
-                ★ AEVORA Alternative
+                ★ TravelIQ Alternative
               </div>
 
               <div>
@@ -1361,8 +1352,8 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400 mb-1">
             <span>Unified Travel Intelligence & Mobility</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-['Sora']">
-            Why AEVORA?
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#F1F3ED] font-heading">
+            Why TravelIQ?
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-['Inter']">
             Discover a smarter way to travel with algorithmic multi-modal transit intelligence, verified schedules, and proactive travel assistance.
@@ -1570,8 +1561,8 @@ export default function LandingPage() {
           <h2 className="text-xl font-bold text-[#202A32] dark:text-[#F0F4F7]">
             Trust & Transparency Commitment
           </h2>
-          <p className="text-xs sm:text-sm text-[#66737D] dark:text-[#9CAAB5] leading-relaxed max-w-3xl mx-auto">
-            At AEVORA, we believe honest travel information is essential. Train schedules, station codes, and running frequencies are validated against active datasets. Whenever live data is unavailable, information is clearly labeled as an estimate.
+          <p className="text-xs sm:text-sm text-[#A6B1A7] leading-relaxed max-w-3xl mx-auto">
+            At TravelIQ, we believe honest travel information is essential. Train schedules, station codes, and running frequencies are validated against active datasets. Whenever live data is unavailable, information is clearly labeled as an estimate.
           </p>
         </div>
       </section>
@@ -1632,8 +1623,8 @@ export default function LandingPage() {
 
           </div>
 
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#89939B]">
-            <p>© {new Date().getFullYear()} AEVORA. All rights reserved. A smarter way to discover the world.</p>
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#A6B1A7]">
+            <p>© {new Date().getFullYear()} TravelIQ. All rights reserved. Explore Beyond Routes.</p>
             <p>Built with verified transit schedules and intelligent route optimization.</p>
           </div>
 

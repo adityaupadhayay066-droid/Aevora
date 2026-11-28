@@ -48,50 +48,67 @@ html, body {
   background: rgba(163, 176, 171, 0.45);
 }
 
-/* ===== AEVORA Unified Travel Intelligence Design Tokens (Default Dark Theme) ===== */
+/* ===== TravelIQ Dark Luxury Glass Design System Tokens ===== */
 :root,
 .dark,
 [data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #0B111E;
-  --color-surface: #0F172A;
-  --color-cream: #131D31;
-  --color-primary: #38BDF8;
-  --color-primary-hover: #7DD3FC;
-  --color-primary-light: #BAE6FD;
-  --color-navy: #0B132B;
-  --color-navy-dark: #070B1A;
-  --color-cyan: #38BDF8;
-  --color-teal: #0284C7;
-  --color-teal-hover: #38BDF8;
-  --color-teal-light: #7DD3FC;
-  --color-teal-subtle: #0C2340;
-  --color-accent: #38BDF8;
-  --color-accent-hover: #7DD3FC;
-  --color-secondary: #94A3B8;
-  --color-secondary-dark: #CBD5E1;
-  --color-amber: #FBBF24;
-  --color-orange: #FB923C;
-  --color-text: #F8FAFC;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
-  --color-border: #1E293B;
-  --color-border-light: #162032;
-  --color-soft: #0E1828;
-  --color-section: #0C1524;
-  --color-nav-selected-bg: #122838;
-  --color-nav-selected-text: #20C5D9;
-  --color-danger: #F87171;
-  --color-error: #F87171;
-  --color-success: #34D399;
+  --color-bg: #0B100D;
+  --color-surface: #111A14;
+  --color-card: #17221A;
+  --color-elevated: #1D2A21;
+  --color-cream: #17221A;
 
+  /* Primary Forest & Sage Tokens */
+  --color-primary: #315B40;
+  --color-primary-hover: #3d6f4f;
+  --color-primary-light: #91B39A;
+  --color-sage: #91B39A;
+  --color-muted-green: #6F8D76;
+
+  /* Dark Luxury Glass Palettes */
+  --color-navy: #0B100D;
+  --color-navy-dark: #070B09;
+  --color-cyan: #91B39A;
+  --color-teal: #315B40;
+  --color-teal-hover: #3d6f4f;
+  --color-teal-light: #91B39A;
+  --color-teal-subtle: #17221A;
+  --color-accent: #C4A77D;
+  --color-accent-hover: #d4bda0;
+  --color-gold: #C4A77D;
+  --color-secondary: #A6B1A7;
+  --color-secondary-dark: #6F8D76;
+  --color-amber: #C4A77D;
+  --color-orange: #C4A77D;
+
+  /* Typography Colors */
+  --color-text: #F1F3ED;
+  --color-text-secondary: #A6B1A7;
+  --color-text-muted: #6F8D76;
+
+  /* Structural & Glass Borders */
+  --color-border: rgba(255, 255, 255, 0.10);
+  --color-border-light: rgba(255, 255, 255, 0.06);
+  --color-soft: #111A14;
+  --color-section: #0B100D;
+  --color-nav-selected-bg: rgba(49, 91, 64, 0.25);
+  --color-nav-selected-text: #91B39A;
+
+  /* Status Tokens */
+  --color-danger: #EF4444;
+  --color-error: #EF4444;
+  --color-success: #315B40;
+
+  /* Typography Stack */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: 'Sora', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-editorial: 'DM Serif Display', Georgia, serif;
 
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 }
 
 /* ===== Global Reset & Base Styling ===== */

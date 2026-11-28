@@ -1,48 +1,87 @@
 /**
- * AEVORA Design System Brand Utilities
- * Professional Aerospace & Modern Mobility Palette:
- * - Midnight Navy: #0B132B
- * - Ocean Sky Blue: #0284C7
- * - Sky Highlight:  #38BDF8
- * - Cloud White:    #F8FAFC
- * - Slate Grey:     #64748B
+ * TravelIQ Official Design System & Dark Luxury Glass Brand Tokens
+ *
+ * Color System:
+ * - Main background:      #0B100D
+ * - Secondary background: #111A14
+ * - Card background:      #17221A
+ * - Elevated surface:     #1D2A21
+ * - Primary green:        #315B40
+ * - Sage green:           #91B39A
+ * - Muted green:          #6F8D76
+ * - Primary text:         #F1F3ED
+ * - Secondary text:       #A6B1A7
+ * - Gold accent:          #C4A77D
+ * - Border Glass:         rgba(255, 255, 255, 0.10)
  */
 
 :root {
-  --aevora-navy: #0B132B;
-  --aevora-cyan: #0284C7;
-  --aevora-teal: #38BDF8;
-  --aevora-cloud: #F8FAFC;
-  --aevora-surface: #FFFFFF;
-  --aevora-slate: #64748B;
-  --aevora-gradient: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+  --color-bg-main: #0B100D;
+  --color-bg-secondary: #111A14;
+  --color-bg-card: #17221A;
+  --color-bg-elevated: #1D2A21;
+  --color-primary-green: #315B40;
+  --color-sage: #91B39A;
+  --color-muted-green: #6F8D76;
+  --color-text-primary: #F1F3ED;
+  --color-text-secondary: #A6B1A7;
+  --color-gold: #C4A77D;
+  --color-border-glass: rgba(255, 255, 255, 0.10);
+  --color-border-accent: rgba(196, 167, 125, 0.25);
+
+  --font-editorial: 'DM Serif Display', Georgia, serif;
+  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-editorial {
+  font-family: var(--font-editorial);
 }
 
 .font-heading {
-  font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-heading);
 }
 
 .font-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-body);
 }
 
-.bg-aevora-navy {
-  background-color: #0B132B;
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(23, 34, 26, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
-.text-aevora-cyan {
-  color: #0284C7;
+.glass-card {
+  background: rgba(23, 34, 26, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.text-aevora-teal {
-  color: #38BDF8;
+.glass-card-elevated {
+  background: rgba(29, 42, 33, 0.90);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(196, 167, 125, 0.20);
 }
 
-.bg-aevora-gradient {
-  background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+.glass-dropdown {
+  background: rgba(17, 26, 20, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
-.border-aevora-cyan {
-  border-color: #0284C7;
+.gold-glow {
+  box-shadow: 0 0 25px rgba(196, 167, 125, 0.15);
 }
+
+.forest-glow {
+  box-shadow: 0 0 30px rgba(49, 91, 64, 0.20);
+}
+
 

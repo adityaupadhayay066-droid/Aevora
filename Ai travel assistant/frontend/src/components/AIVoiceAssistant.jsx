@@ -279,14 +279,14 @@ export default function AIVoiceAssistant() {
                             boxShadow: '0 2px 8px rgba(23, 63, 58, 0.08)',
                             opacity: 0.6,
                         }}
-                        title="Open AEVORA Voice Assistant"
+                        title="Open TravelIQ Voice Assistant"
                     >
                         <span
                             className="shrink-0"
                             style={{
                                 width: 6,
                                 height: 6,
-                                background: '#0284C7',
+                                background: '#315B40',
                                 borderRadius: '1px',
                                 animation: 'pulse 2s ease-in-out infinite',
                             }}
@@ -301,31 +301,31 @@ export default function AIVoiceAssistant() {
                                 letterSpacing: '0.02em',
                             }}
                         >
-                            AEVORA Voice Assistant
+                            TravelIQ Voice Assistant
                         </span>
                     </button>
                 )}
 
-                {/* Mic FAB — matches chatbot's green circle style */}
+                {/* Mic FAB — matches dark luxury glass circle style */}
                 <button
                     onClick={togglePanel}
-                    aria-label="AEVORA Voice Assistant"
-                    title="AEVORA Voice Assistant"
+                    aria-label="TravelIQ Voice Assistant"
+                    title="TravelIQ Voice Assistant"
                     className={`w-14 h-14 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95 shrink-0 ${
                         isOpen
-                            ? 'text-[var(--color-primary)] dark:text-[#F0F4F7]'
-                            : 'text-white'
+                            ? 'text-[#91B39A]'
+                            : 'text-[#F1F3ED]'
                     }`}
                     style={{
-                        background: isOpen ? 'var(--color-surface)' : 'var(--color-primary, #244C66)',
-                        border: isOpen ? '1px solid var(--color-border)' : '2px solid rgba(255,255,255,0.2)',
-                        boxShadow: '0 4px 16px rgba(36, 76, 102, 0.25)',
+                        background: isOpen ? 'var(--color-card, #17221A)' : 'var(--color-primary, #315B40)',
+                        border: isOpen ? '1px solid var(--color-border)' : '1px solid rgba(196,167,125,0.3)',
+                        boxShadow: '0 4px 16px rgba(11, 16, 13, 0.4)',
                     }}
                 >
                     {isOpen ? <X className="h-6 w-6" /> : (
                         <div className="relative">
                             <Mic className="h-6 w-6" />
-                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full" style={{ background: '#E58A3A' }} />
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full" style={{ background: '#C4A77D' }} />
                         </div>
                     )}
                 </button>
@@ -375,7 +375,7 @@ export default function AIVoiceAssistant() {
                                     style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}
                                 >
                                     <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#0284C7' }} />
-                                    AEVORA AI
+                                    TravelIQ AI
                                 </span>
                             </div>
                         </div>

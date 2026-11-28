@@ -1,37 +1,43 @@
 /**
- * AEVORA Official Brand Configuration & Identity System
- * Unified travel intelligence and mobility platform.
+ * TravelIQ Official Brand Configuration & Identity System
+ * Premium Dark Luxury Travel Intelligence & Mobility Platform.
  */
 
 export const BRAND = {
-  name: 'AEVORA',
-  legalName: 'AEVORA Travel Technologies Inc.',
-  tagline: 'A smarter way to discover the world.',
-  philosophy: 'Discover. Connect. Explore.',
-  positioning: 'AI-powered unified travel intelligence and mobility platform.',
-  version: '2.4.0',
+  name: 'TravelIQ',
+  legalName: 'TravelIQ Global Technologies Inc.',
+  tagline: 'Explore Beyond Routes.',
+  subtitle: 'Discover destinations, compare journeys and experience intelligent travel planning with TravelIQ.',
+  philosophy: 'Explore. Connect. Experience.',
+  positioning: 'Dark Luxury Glass 3D Travel Intelligence Platform.',
+  version: '3.0.0',
 
   colors: {
-    primary: '#0B132B',         // Deep Midnight Navy
-    primaryAccent: '#0284C7',   // Aerospace Sky Blue
-    secondaryAccent: '#38BDF8', // Crisp Sky Highlight
-    background: '#F8FAFC',      // Crisp Cloud White
-    surface: '#FFFFFF',         // Pure White
-    secondaryText: '#64748B',   // Slate Grey
-    darkSurface: '#0F172A',     // Obsidian Slate
-    borderLight: '#E2E8F0',
-    borderDark: '#1E293B',
+    bgMain: '#0B100D',          // Main background
+    bgSecondary: '#111A14',     // Secondary background
+    bgCard: '#17221A',          // Card background
+    bgElevated: '#1D2A21',      // Elevated surface
+    primaryGreen: '#315B40',    // Primary emerald forest green
+    sage: '#91B39A',            // Sage green accent
+    mutedGreen: '#6F8D76',      // Muted green
+    textPrimary: '#F1F3ED',     // Primary text
+    textSecondary: '#A6B1A7',   // Secondary text
+    gold: '#C4A77D',            // Champagne gold accent
+    borderGlass: 'rgba(255, 255, 255, 0.10)',
+    borderAccent: 'rgba(196, 167, 125, 0.22)',
   },
 
   gradients: {
-    primary: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)',
-    navyGlow: 'linear-gradient(135deg, #0B132B 0%, #1E293B 100%)',
-    surfaceGlow: 'linear-gradient(180deg, rgba(2, 132, 199, 0.05) 0%, rgba(56, 189, 248, 0.01) 100%)',
+    primary: 'linear-gradient(135deg, #315B40 0%, #91B39A 100%)',
+    forestGlow: 'linear-gradient(135deg, #111A14 0%, #17221A 100%)',
+    glassSurface: 'linear-gradient(180deg, rgba(23, 34, 26, 0.75) 0%, rgba(17, 26, 20, 0.85) 100%)',
+    goldGlow: 'linear-gradient(135deg, #C4A77D 0%, #91B39A 100%)',
   },
 
   typography: {
-    headingFont: "'Sora', -apple-system, BlinkMacSystemFont, sans-serif",
+    headingFont: "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif",
     bodyFont: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    editorialFont: "'DM Serif Display', Georgia, serif",
   },
 
   assets: {
@@ -39,26 +45,30 @@ export const BRAND = {
     logoDark: '/brand/aevora-logo-dark.svg',
     logoLight: '/brand/aevora-logo-light.svg',
     icon: '/brand/aevora-icon.svg',
-    monochrome: '/brand/aevora-monochrome.svg',
     favicon: '/favicon.svg',
   },
 
   links: {
-    supportEmail: 'support@aevora.travel',
-    securityEmail: 'security@aevora.travel',
+    supportEmail: 'concierge@traveliq.ai',
+    securityEmail: 'security@traveliq.ai',
     docs: '/developer',
   },
 
   features: [
     {
-      title: 'Intelligent Route Planning',
-      description: 'Algorithmic multi-modal routing comparing rail, road, and air in real time.',
-      icon: 'Route',
+      title: 'Cinematic 3D Multi-Modal Discovery',
+      description: 'Algorithmic route synthesis calculating rail, road, and flight itineraries in real time.',
+      icon: 'Compass',
     },
     {
-      title: 'Multi-Transport Discovery',
-      description: 'Unified search across verified rail networks, airlines, and intercity buses.',
-      icon: 'Compass',
+      title: 'Dark Luxury Travel Intelligence',
+      description: 'Intelligent journey forecasting, crowd analysis, and hotel reservation luxury tiers.',
+      icon: 'Shield',
+    },
+    {
+      title: 'Instant Railway & Stay Integration',
+      description: 'Authentic IRCTC telescopic fares, live station tracking, and verified hospitality.',
+      icon: 'Train',
     },
     {
       title: 'Smart Fare Comparison',

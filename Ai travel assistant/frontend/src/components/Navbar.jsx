@@ -115,7 +115,7 @@ const SEARCHABLE_ITEMS = [
   { title: 'Agentic Autonomous Planner', category: 'AI Tools', to: '/dashboard/agentic-planner', icon: Cpu },
   { title: 'RAG Copilot & Intelligent Search', category: 'AI Tools', to: '/dashboard/rag', icon: Brain },
   { title: 'AI Delay & Fare Predictions', category: 'AI Tools', to: '/dashboard/ai-predictions', icon: BarChart3 },
-  { title: 'AEVORA Voice Assistant', category: 'AI Tools', to: '/dashboard/voice-assistant', icon: Mic },
+  { title: 'TravelIQ Voice Assistant', category: 'AI Tools', to: '/dashboard/voice-assistant', icon: Mic },
   { title: 'Interactive 3D Travel Globe', category: 'AI Tools', to: '/dashboard/3d-globe', icon: Globe2 },
   { title: 'Knowledge Graph Visualization', category: 'AI Tools', to: '/dashboard/knowledge-graph', icon: Network },
   { title: 'AI Workspace Command Center', category: 'AI Tools', to: '/dashboard/ai-workspace', icon: Sparkles },

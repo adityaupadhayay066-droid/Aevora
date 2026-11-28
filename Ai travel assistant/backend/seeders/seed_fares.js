@@ -36,6 +36,24 @@ async function seedFares() {
 
       let distanceKm = 650; // reasonable default if coordinates unavailable
       if (schedules.length >= 2) {
+        const firstStop = schedules[0];
+        const lastStop = schedules[schedules.length - 1];
+
+        const [origStation, destStation] = await Promise.all([
+          Station.findOne({ where: { station_code: firstStop.station_code } }),
+          Station.findOne({ where: { station_code: lastStop.station_code } })
+        ]);
+
+        let endToEndDist = 0;
+        if (origStation?.latitude && destStation?.latitude) {
+          endToEndDist = estimateRailDistance(
+            parseFloat(origStation.latitude),
+            parseFloat(origStation.longitude),
+            parseFloat(destStation.latitude),
+            parseFloat(destStation.longitude)
+          );
+        }
+
         // Calculate cumulative rail distance along the train's actual stop sequence
         let totalStopDistance = 0;
         let validSegmentsCount = 0;
@@ -63,26 +81,11 @@ async function seedFares() {
           }
         }
 
-        if (validSegmentsCount >= 1 && totalStopDistance > 0) {
+        // If cumulative stop distance is reasonable (< 1.6x end-to-end distance), use it; otherwise use end-to-end * 1.15
+        if (validSegmentsCount >= 1 && totalStopDistance > 0 && (endToEndDist === 0 || totalStopDistance <= endToEndDist * 1.6)) {
           distanceKm = totalStopDistance;
-        } else {
-          // Fallback to end-to-end station coordinates
-          const firstStop = schedules[0];
-          const lastStop = schedules[schedules.length - 1];
-
-          const [origStation, destStation] = await Promise.all([
-            Station.findOne({ where: { station_code: firstStop.station_code } }),
-            Station.findOne({ where: { station_code: lastStop.station_code } })
-          ]);
-
-          if (origStation?.latitude && destStation?.latitude) {
-            distanceKm = estimateRailDistance(
-              parseFloat(origStation.latitude),
-              parseFloat(origStation.longitude),
-              parseFloat(destStation.latitude),
-              parseFloat(destStation.longitude)
-            );
-          }
+        } else if (endToEndDist > 0) {
+          distanceKm = Math.round(endToEndDist * 1.15);
         }
       }
 

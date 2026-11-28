@@ -10,7 +10,7 @@ import useScrollShrink from '../hooks/useScrollShrink';
 
 const INITIAL_MSG = { 
   role: 'bot', 
-  text: "Hello! I am your AEVORA Assistant & Travel Concierge.\n\nI can plan end-to-end multimodal trips across India with verified train, bus, and flight connections, curated stays, local food specialties, and budget breakdowns. How can I help you today?",
+  text: "Hello! I am your TravelIQ Assistant & Travel Concierge.\n\nI can plan end-to-end multimodal trips across India with verified train, bus, and flight connections, curated stays, local food specialties, and budget breakdowns. How can I help you today?",
   structured: {
     title: "Quick Suggested Itinerary",
     prompt: "Bhubaneswar to Manali (5 Days under ₹15,000)",
@@ -201,7 +201,7 @@ export default function AIChatbot() {
       } else {
         setMessages(prev => [...prev, { 
           role: 'bot', 
-          text: `I've prepared recommendations for "${text}". AEVORA verifies live train seat availability, scenic bus alternatives, and local dining so your travel remains cost-effective and on time.` 
+          text: `I've prepared recommendations for "${text}". TravelIQ verifies live train seat availability, scenic bus alternatives, and local dining so your travel remains cost-effective and on time.` 
         }]);
       }
     } finally {
@@ -264,32 +264,32 @@ export default function AIChatbot() {
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 w-14 h-14 rounded-full bg-slate-900 hover:bg-slate-800 text-sky-400 shadow-xl cursor-pointer flex items-center justify-center border border-slate-700/80 transition-transform duration-200"
         style={{ transform: `scale(${isOpen ? 1 : scrollScale})`, transformOrigin: 'bottom right' }}
-        title="AEVORA Assistant Concierge"
+        title="TravelIQ Assistant Concierge"
       >
         {isOpen ? <X className="w-6 h-6 text-white" /> : (
           <div className="relative">
-            <MessageSquare className="w-6 h-6 text-sky-400" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping" />
+            <MessageSquare className="w-6 h-6 text-[#91B39A]" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#C4A77D] animate-ping" />
           </div>
         )}
       </button>
 
       {/* Assistant Modal Window */}
       {isOpen && (
-        <div className="fixed bottom-36 right-3 sm:bottom-22 sm:right-6 z-50 w-[calc(100vw-1.5rem)] sm:w-[460px] h-[600px] max-h-[82vh] bg-white dark:bg-[#101B2D] border border-[#E2E8F0] dark:border-[#1E293B] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[#101B2D] dark:text-[#F8FAFC]">
+        <div className="fixed bottom-36 right-3 sm:bottom-22 sm:right-6 z-50 w-[calc(100vw-1.5rem)] sm:w-[460px] h-[600px] max-h-[82vh] bg-[#17221A] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[#F1F3ED]">
           
           {/* Concierge Header */}
-          <div className="p-4 border-b border-[#E2E8F0] dark:border-[#1E293B] flex items-center justify-between bg-[#F4F7FB] dark:bg-[#0C1523]">
+          <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#111A14]">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-slate-900 text-sky-400 border border-slate-700/80 flex items-center justify-center font-black shadow-xs text-xs">
-                AE
+              <div className="w-9 h-9 rounded-xl bg-[#1D2A21] text-[#C4A77D] border border-white/10 flex items-center justify-center font-black shadow-xs text-xs">
+                IQ
               </div>
               <div>
-                <h4 className="text-sm font-bold text-[#101B2D] dark:text-[#F8FAFC] font-['Sora']">
-                  AEVORA Assistant
+                <h4 className="text-sm font-bold text-[#F1F3ED] font-heading">
+                  TravelIQ Assistant
                 </h4>
-                <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8] flex items-center gap-1 font-['Inter']">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                <p className="text-[11px] text-[#A6B1A7] flex items-center gap-1 font-sans">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#91B39A]" />
                   Intelligent Travel Concierge
                 </p>
               </div>
