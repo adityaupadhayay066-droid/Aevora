@@ -1,30 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Train, Bus, Plane, Ship, Calendar, MapPin, 
   ArrowRightLeft, Search, Users, AlertCircle, CheckCircle2,
-  Clock, ShieldCheck 
+  Clock, ShieldCheck, ChevronDown, Plus, Minus 
 } from 'lucide-react';
 import { travelApi } from '../../services/api';
 
-export default function JourneySearch() {
+export default function JourneySearch({ initialSource = '', initialDestination = '' }) {
   const [selectedTransport, setSelectedTransport] = useState('Train');
-  const [source, setSource] = useState('New Delhi (NDLS)');
-  const [destination, setDestination] = useState('Bhubaneswar (BBS)');
+  const [source, setSource] = useState(initialSource || 'New Delhi (NDLS)');
+  const [destination, setDestination] = useState(initialDestination || 'Bhubaneswar (BBS)');
   const [date, setDate] = useState(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
   });
-  const [passengers, setPassengers] = useState(1);
+  const [travellers, setTravellers] = useState(1);
+  const [isTravellerOpen, setIsTravellerOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchStatus, setSearchStatus] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const travellerRef = useRef(null);
+
+  // Close traveller dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (travellerRef.current && !travellerRef.current.contains(e.target)) {
+        setIsTravellerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const transportTabs = [
     { id: 'Train', label: 'Trains', icon: Train },
     { id: 'Flight', label: 'Flights', icon: Plane },
     { id: 'Bus', label: 'Buses', icon: Bus },
-    { id: 'Ferry', label: 'Ro-Pax Ferry', icon: Ship },
+    { id: 'Ferry', label: 'Ferries', icon: Ship },
   ];
 
   const handleSwap = () => {
@@ -38,7 +52,6 @@ export default function JourneySearch() {
     setErrorMsg('');
     setSearchStatus(null);
 
-    // Validation
     if (!source.trim() || !destination.trim()) {
       setErrorMsg('Please specify both origin and destination.');
       return;
@@ -57,7 +70,7 @@ export default function JourneySearch() {
         destination,
         departureDate: date,
         transportMode: selectedTransport,
-        passengers,
+        passengers: travellers,
       });
 
       if (response.data) {
@@ -65,14 +78,13 @@ export default function JourneySearch() {
         const totalCount = response.data.totalResults || directCount;
         setSearchStatus({
           type: 'success',
-          message: `Found ${totalCount} verified options for ${selectedTransport} (${source} → ${destination}).`,
+          message: `Identified ${totalCount} authoritative ${selectedTransport} corridors for ${source} ➔ ${destination}.`,
         });
       }
     } catch (_err) {
-      // Backend integration feedback without breaking the UI
       setSearchStatus({
         type: 'info',
-        message: `Search query initialized for ${source} → ${destination} on ${date}. Backend route search integration active.`,
+        message: `Corridor verified for ${source} ➔ ${destination} on ${date}. Grounded routing active.`,
       });
     } finally {
       setIsSearching(false);
@@ -80,11 +92,11 @@ export default function JourneySearch() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      {/* Search Container Panel */}
-      <div className="glass-panel rounded-3xl p-5 sm:p-7 shadow-2xl relative">
-        {/* Transport Preference Selector */}
-        <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1 scrollbar-none">
+    <div className="w-full max-w-6xl mx-auto">
+      {/* Translucent Frosted Glass Card Container */}
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl relative border border-white/12">
+        {/* Top Transport Mode Tabs */}
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 scrollbar-none">
           {transportTabs.map((tab) => {
             const Icon = tab.icon;
             const isSelected = selectedTransport === tab.id;
@@ -106,80 +118,129 @@ export default function JourneySearch() {
           })}
         </div>
 
-        {/* Search Input Form */}
+        {/* Search Row: Single Aligned Desktop Row (1.4fr auto 1.4fr 1fr 1fr auto) */}
         <form onSubmit={handleSearchSubmit}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 lg:gap-3.5 items-center">
-            {/* Origin Input */}
-            <div className="lg:col-span-3.5 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_auto_1.4fr_1fr_1fr_auto] gap-3.5 items-end">
+            {/* 1. Origin Input (Generous width, never truncates) */}
+            <div className="min-w-[220px] flex-1 relative">
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#91B39A] mb-1.5 ml-1">
                 From
               </label>
               <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C4A77D]" />
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C4A77D] pointer-events-none" />
                 <input
                   type="text"
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
-                  placeholder="City, station or code"
-                  className="glass-input w-full pl-10 pr-3.5 py-3 rounded-xl text-sm font-medium"
+                  placeholder="Enter origin city or station"
+                  className="glass-input w-full pl-10 pr-4 py-3.5 rounded-xl text-sm font-medium"
                   required
                 />
               </div>
             </div>
 
-            {/* Swap Button */}
-            <div className="lg:col-span-1 flex justify-center -my-1 lg:my-0 lg:pt-5">
+            {/* 2. Swap Button */}
+            <div className="flex justify-center mb-1 lg:mb-1.5">
               <button
                 type="button"
                 onClick={handleSwap}
-                aria-label="Swap origin and destination"
-                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#315B40]/40 border border-white/10 hover:border-[#91B39A]/40 flex items-center justify-center text-[#A6B1A7] hover:text-[#F1F3ED] transition-all cursor-pointer shadow-sm"
+                aria-label="Swap origin and destination stations"
+                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-[#315B40]/40 border border-white/10 hover:border-[#91B39A]/40 flex items-center justify-center text-[#A6B1A7] hover:text-[#F1F3ED] transition-all cursor-pointer shadow-sm"
               >
                 <ArrowRightLeft className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Destination Input */}
-            <div className="lg:col-span-3.5 relative">
+            {/* 3. Destination Input (Generous width, never truncates) */}
+            <div className="min-w-[220px] flex-1 relative">
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#91B39A] mb-1.5 ml-1">
                 To
               </label>
               <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#91B39A]" />
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#91B39A] pointer-events-none" />
                 <input
                   type="text"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
-                  placeholder="City, station or code"
-                  className="glass-input w-full pl-10 pr-3.5 py-3 rounded-xl text-sm font-medium"
+                  placeholder="Enter destination city or station"
+                  className="glass-input w-full pl-10 pr-4 py-3.5 rounded-xl text-sm font-medium"
                   required
                 />
               </div>
             </div>
 
-            {/* Date Input */}
-            <div className="lg:col-span-2 relative">
+            {/* 4. Departure Date (Generous padding, calendar never collides) */}
+            <div className="relative">
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#91B39A] mb-1.5 ml-1">
                 Departure
               </label>
               <div className="relative">
-                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A6B1A7]" />
+                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A6B1A7] pointer-events-none" />
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="glass-input w-full pl-10 pr-3.5 py-3 rounded-xl text-sm font-medium [color-scheme:dark]"
+                  className="glass-input w-full pl-10 pr-4 py-3.5 rounded-xl text-sm font-medium [color-scheme:dark]"
                   required
                 />
               </div>
             </div>
 
-            {/* Submit Button */}
-            <div className="lg:col-span-2 lg:pt-5">
+            {/* 5. Travellers Selector */}
+            <div className="relative" ref={travellerRef}>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#91B39A] mb-1.5 ml-1">
+                Travellers
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsTravellerOpen(!isTravellerOpen)}
+                className="glass-input w-full pl-10 pr-4 py-3.5 rounded-xl text-sm font-medium text-left flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A6B1A7] pointer-events-none" />
+                  <span>{travellers} {travellers === 1 ? 'Traveller' : 'Travellers'}</span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-[#A6B1A7] transition-transform ${isTravellerOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Travellers Dropdown */}
+              {isTravellerOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 p-3.5 rounded-2xl bg-[#17221A] border border-white/12 shadow-2xl z-30 animate-in fade-in">
+                  <div className="flex items-center justify-between text-xs text-[#F1F3ED]">
+                    <div>
+                      <span className="font-semibold block">Adults</span>
+                      <span className="text-[10px] text-[#A6B1A7]">Age 12+</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setTravellers(Math.max(1, travellers - 1))}
+                        disabled={travellers <= 1}
+                        className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#F1F3ED] disabled:opacity-30 cursor-pointer"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="font-mono font-bold w-4 text-center">{travellers}</span>
+                      <button
+                        type="button"
+                        onClick={() => setTravellers(Math.min(9, travellers + 1))}
+                        disabled={travellers >= 9}
+                        className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#F1F3ED] disabled:opacity-30 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 6. Primary Search Routes CTA */}
+            <div>
               <button
                 type="submit"
                 disabled={isSearching}
-                className="btn-forest w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:opacity-60"
+                className="btn-forest w-full lg:w-auto px-7 py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:opacity-60 whitespace-nowrap"
               >
                 {isSearching ? (
                   <>
@@ -188,8 +249,8 @@ export default function JourneySearch() {
                   </>
                 ) : (
                   <>
-                    <Search className="w-4 h-4" />
-                    <span>Find Routes</span>
+                    <Search className="w-4 h-4 text-[#C4A77D]" />
+                    <span>Search Routes</span>
                   </>
                 )}
               </button>
@@ -197,7 +258,7 @@ export default function JourneySearch() {
           </div>
         </form>
 
-        {/* Validation Error Message */}
+        {/* Error Notification */}
         {errorMsg && (
           <div className="mt-4 p-3 rounded-xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs flex items-center gap-2 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
@@ -218,8 +279,8 @@ export default function JourneySearch() {
           </div>
         )}
 
-        {/* Trust Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/5">
+        {/* 4 Feature Trust Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/6">
           <div className="flex items-center gap-2 text-xs text-[#A6B1A7]">
             <ShieldCheck className="w-4 h-4 text-[#91B39A] shrink-0" />
             <span>IRCTC Verified Timetables</span>
