@@ -5,7 +5,7 @@ import { useScrollState } from '../../hooks/useScrollState';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isScrolled } = useScrollState(16);
+  const { isScrolled } = useScrollState(18);
   const location = useLocation();
 
   useEffect(() => {
@@ -23,30 +23,30 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Explore', path: '/explore' },
     { name: 'Destinations', path: '/destinations' },
-    { name: 'Route Map', path: '/explore' },
+    { name: 'Route Explorer', path: '/explore' },
     { name: 'AI Concierge', path: '/ai-assistant' },
   ];
 
   const isActive = (path) => location.pathname === path;
+  const isHomePage = location.pathname === '/';
+  const shouldShowNavbar = !isHomePage || isScrolled;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none">
-      {/* Centered Floating Glass Pill Navbar */}
-      <div className="max-w-6xl mx-auto mt-4 sm:mt-5 pointer-events-auto">
+    <header className={`fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none transition-all duration-500 transform ${
+      shouldShowNavbar ? 'translate-y-0 opacity-100' : '-translate-y-12 opacity-0'
+    }`}>
+      {/* Floating Centered Pill Navigation Surface */}
+      <div className={`max-w-6xl mx-auto mt-4 sm:mt-5 ${shouldShowNavbar ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <nav
-          aria-label="Aevora Navigation"
-          className={`rounded-full transition-all duration-300 px-5 sm:px-6 py-3 flex items-center justify-between border ${
-            isScrolled
-              ? 'bg-[#111A14]/88 backdrop-blur-2xl border-white/14 shadow-[0_16px_36px_-10px_rgba(0,0,0,0.85)]'
-              : 'bg-[#111A14]/65 backdrop-blur-xl border-white/10 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6)]'
-          }`}
+          aria-label="TravelIQ Navigation"
+          className="rounded-full transition-all duration-300 px-5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between border bg-[#111A14]/90 backdrop-blur-2xl border-white/14 shadow-[0_16px_36px_-10px_rgba(0,0,0,0.85)]"
         >
-          {/* Left: Aevora Logo & Custom Geometric Monogram */}
+          {/* Left: TravelIQ Logo & Custom Brand Symbol */}
           <Link
             to="/"
-            className="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4A77D] rounded-full"
+            className="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4A77D] rounded-full"
           >
-            {/* Custom Geometric Compass / Mountain Peak SVG */}
+            {/* Custom Brand Symbol: Mountain Peak with Golden Meridian Node */}
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#17221A] to-[#0B100D] border border-white/15 flex items-center justify-center shadow-md group-hover:border-[#C4A77D]/60 transition-colors">
               <svg
                 className="w-4.5 h-4.5 text-[#C4A77D] transition-transform duration-300 group-hover:scale-110"
@@ -62,13 +62,15 @@ export default function Navbar() {
               </svg>
             </div>
 
-            {/* Aevora Wordmark */}
-            <span className="font-display font-extrabold text-lg text-[#F1F3ED] tracking-tight group-hover:text-white transition-colors">
-              Aevora
-            </span>
+            {/* TravelIQ Wordmark */}
+            <div className="flex flex-col">
+              <span className="font-display font-extrabold text-lg text-[#F1F3ED] tracking-tight group-hover:text-white transition-colors">
+                Travel<span className="text-[#C4A77D]">IQ</span>
+              </span>
+            </div>
           </Link>
 
-          {/* Center: Desktop Navigation Links */}
+          {/* Center: Clean Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2">
             {navLinks.map((link) => {
               const active = isActive(link.path);
@@ -91,9 +93,9 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right: Actions */}
+          {/* Right: Actions (AI Assistant, Log In, Get Started) */}
           <div className="hidden md:flex items-center gap-3">
-            {/* AI Assistant Sparkle Pill */}
+            {/* AI Assistant Pill */}
             <Link
               to="/ai-assistant"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#17221A]/70 hover:bg-[#1D2A21] text-[#91B39A] hover:text-[#F1F3ED] border border-white/10 hover:border-[#91B39A]/40 transition-all duration-200 shadow-sm"
@@ -102,7 +104,7 @@ export default function Navbar() {
               <span>AI Assistant</span>
             </Link>
 
-            {/* Log In Text Link */}
+            {/* Log In Link */}
             <Link
               to="/login"
               className="px-3 py-1.5 rounded-full text-xs lg:text-sm font-medium text-[#A6B1A7] hover:text-[#F1F3ED] transition-colors"
@@ -110,7 +112,7 @@ export default function Navbar() {
               Log In
             </Link>
 
-            {/* Refined Get Started CTA Button */}
+            {/* Get Started Button */}
             <Link
               to="/plan"
               className="btn-forest inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs lg:text-sm font-semibold tracking-wide shadow-md hover:shadow-lg"
@@ -120,7 +122,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile Menu Toggle Button */}
+          {/* Mobile Toggle Button */}
           <div className="flex md:hidden items-center gap-2">
             <Link
               to="/ai-assistant"
@@ -132,7 +134,7 @@ export default function Navbar() {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-full bg-white/5 border border-white/10 text-[#F1F3ED] hover:bg-white/10 transition-colors"
-              aria-label={mobileMenuOpen ? 'Close Navigation' : 'Open Navigation'}
+              aria-label={mobileMenuOpen ? 'Close Menu' : 'Open Menu'}
               aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -141,12 +143,12 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 top-[76px] z-40 bg-[#0B100D]/95 backdrop-blur-2xl md:hidden px-4 py-6 border-t border-white/10 overflow-y-auto animate-in fade-in duration-200 pointer-events-auto">
           <div className="flex flex-col gap-3 max-w-sm mx-auto">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6F8D76] px-3 mb-1">
-              Menu Navigation
+              TravelIQ Navigation
             </div>
             {navLinks.map((link) => (
               <Link
@@ -167,7 +169,7 @@ export default function Navbar() {
             >
               <span className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#C4A77D]" />
-                Aevora AI Concierge
+                AI Travel Concierge
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#C4A77D]/15 text-[#C4A77D]">
                 Active

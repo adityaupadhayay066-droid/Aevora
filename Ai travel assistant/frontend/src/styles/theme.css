@@ -31,6 +31,31 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+.font-condensed {
+  font-family: 'Oswald', 'Manrope', -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Luminous Glowing Viewport Frame (Exact Match to Yosemite Mountain Reference) */
+.luminous-viewport-frame {
+  border-radius: 36px;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  background: rgba(11, 16, 13, 0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 0 40px 3px rgba(255, 255, 255, 0.35),
+    inset 0 0 28px rgba(255, 255, 255, 0.08),
+    0 35px 90px -10px rgba(0, 0, 0, 0.75);
+}
+
+@media (min-width: 640px) {
+  .luminous-viewport-frame {
+    border-radius: 44px;
+  }
+}
+
 /* Translucent Dark Luxury Glass Surfaces */
 .glass-panel {
   background: rgba(17, 26, 20, 0.65);

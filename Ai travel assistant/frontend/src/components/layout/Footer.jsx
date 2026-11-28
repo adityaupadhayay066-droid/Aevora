@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { Compass, ShieldCheck } from 'lucide-react';
 import Container from '../ui/Container';
 
 export default function Footer() {
@@ -9,21 +9,21 @@ export default function Footer() {
   const footerLinks = {
     explore: [
       { name: 'Train Corridors', path: '/explore' },
-      { name: 'Domestic Air Routes', path: '/explore' },
-      { name: 'Interstate Coach Lines', path: '/explore' },
-      { name: 'Ro-Pax Ferry Transfers', path: '/explore' },
+      { name: 'Domestic Flights', path: '/explore' },
+      { name: 'Interstate Buses', path: '/explore' },
+      { name: 'Ro-Pax Ferries', path: '/explore' },
     ],
     destinations: [
-      { name: 'Himalayan Sanctuaries', path: '/destinations' },
-      { name: 'Konkan Coastline', path: '/destinations' },
+      { name: 'Himalayan Passes', path: '/destinations' },
+      { name: 'Yosemite Valleys', path: '/destinations' },
       { name: 'Kerala Backwaters', path: '/destinations' },
-      { name: 'Kyoto Heritage Trails', path: '/destinations' },
+      { name: 'Kyoto Trails', path: '/destinations' },
     ],
-    platform: [
-      { name: 'Aevora AI Concierge', path: '/ai-assistant' },
-      { name: 'Multimodal Routing Engine', path: '/plan' },
-      { name: 'Dynamic Fares Telemetry', path: '/plan' },
-      { name: 'About Aevora Architecture', path: '/about' },
+    company: [
+      { name: 'About TravelIQ', path: '/about' },
+      { name: 'AI Travel Concierge', path: '/ai-assistant' },
+      { name: 'Contact Us', path: '/about' },
+      { name: 'Platform Status', path: '/about' },
     ],
     legal: [
       { name: 'Privacy Policy', path: '/about' },
@@ -40,7 +40,7 @@ export default function Footer() {
           {/* Brand Info Column */}
           <div className="col-span-2 md:col-span-4 flex flex-col justify-between">
             <div>
-              <Link to="/" className="flex items-center gap-2.5 mb-4 group">
+              <Link to="/" className="flex items-center gap-3 mb-4 group">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#17221A] to-[#0B100D] border border-white/15 flex items-center justify-center">
                   <svg 
                     className="w-4 h-4 text-[#C4A77D]" 
@@ -56,24 +56,24 @@ export default function Footer() {
                   </svg>
                 </div>
                 <span className="font-display font-extrabold text-xl text-[#F1F3ED] tracking-tight">
-                  Aevora
+                  Travel<span className="text-[#C4A77D]">IQ</span>
                 </span>
               </Link>
               <p className="text-xs sm:text-sm text-[#A6B1A7] font-light leading-relaxed max-w-sm mb-6">
-                Aevora is an AI-powered travel intelligence platform delivering authoritative multimodal route discovery, verified timetable synthesis, and luxury spatial planning.
+                TravelIQ is an AI-powered travel intelligence platform delivering authoritative multimodal route discovery, verified timetable synthesis, and luxury spatial planning.
               </p>
             </div>
 
             <div className="inline-flex items-center gap-2 text-xs text-[#6F8D76]">
               <span className="w-2 h-2 rounded-full bg-[#315B40] animate-pulse" />
-              <span>Grounded Intelligence • 100% Verified Telemetry</span>
+              <span>Grounded Intelligence • Verified Telemetry</span>
             </div>
           </div>
 
-          {/* Column: Corridors */}
+          {/* Column: Explore */}
           <div className="col-span-1 md:col-span-2">
             <h4 className="font-display font-semibold text-xs uppercase tracking-wider text-[#F1F3ED] mb-4">
-              Corridors
+              Explore
             </h4>
             <ul className="space-y-2.5">
               {footerLinks.explore.map((link) => (
@@ -102,13 +102,13 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column: Platform */}
+          {/* Column: About & Contact */}
           <div className="col-span-1 md:col-span-2">
             <h4 className="font-display font-semibold text-xs uppercase tracking-wider text-[#F1F3ED] mb-4">
-              Platform
+              Company
             </h4>
             <ul className="space-y-2.5">
-              {footerLinks.platform.map((link) => (
+              {footerLinks.company.map((link) => (
                 <li key={link.name}>
                   <Link to={link.path} className="hover:text-[#F1F3ED] transition-colors text-xs sm:text-sm">
                     {link.name}
@@ -138,7 +138,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#6F8D76]">
           <div>
-            &copy; {currentYear} Aevora Inc. All rights reserved. "Explore Beyond Routes."
+            &copy; {currentYear} TravelIQ Platform Inc. All rights reserved. "Explore Beyond Routes."
           </div>
           <div className="flex items-center gap-6">
             <span>Built with React 19 & Three.js</span>
