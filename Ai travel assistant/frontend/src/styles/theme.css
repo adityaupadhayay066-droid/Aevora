@@ -1,0 +1,144 @@
+@layer base {
+  :root {
+    --color-bg-main: #0B100D;
+    --color-bg-secondary: #111A14;
+    --color-bg-card: #17221A;
+    --color-surface-elevated: #1D2A21;
+    --color-forest: #315B40;
+    --color-forest-hover: #3b6d4d;
+    --color-sage: #91B39A;
+    --color-muted-green: #6F8D76;
+    --color-text-primary: #F1F3ED;
+    --color-text-secondary: #A6B1A7;
+    --color-gold: #C4A77D;
+    --color-border: rgba(255, 255, 255, 0.10);
+    --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-editorial: 'DM Serif Display', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+}
+
+/* Custom font utilities */
+.font-display {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-editorial {
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Translucent Dark Luxury Glass Surfaces */
+.glass-panel {
+  background: rgba(17, 26, 20, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+}
+
+.glass-panel-topbar {
+  background: rgba(11, 16, 13, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-topbar-scrolled {
+  background: rgba(11, 16, 13, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7);
+}
+
+.glass-card {
+  background: rgba(23, 34, 26, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: rgba(29, 42, 33, 0.80);
+  border-color: rgba(145, 179, 154, 0.28);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.8);
+}
+
+.glass-card-elevated {
+  background: rgba(29, 42, 33, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.8);
+}
+
+.glass-input {
+  background: rgba(17, 26, 20, 0.70);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: #F1F3ED;
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(196, 167, 125, 0.6);
+  background: rgba(23, 34, 26, 0.90);
+  box-shadow: 0 0 0 2px rgba(196, 167, 125, 0.15);
+}
+
+.glass-input::placeholder {
+  color: #6F8D76;
+}
+
+/* Button variants */
+.btn-forest {
+  background-color: #315B40;
+  color: #F1F3ED;
+  border: 1px solid rgba(145, 179, 154, 0.25);
+  box-shadow: 0 4px 14px rgba(49, 91, 64, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-forest:hover {
+  background-color: #3b6d4d;
+  border-color: rgba(145, 179, 154, 0.45);
+  box-shadow: 0 6px 20px rgba(49, 91, 64, 0.55);
+  transform: translateY(-1px);
+}
+
+.btn-gold {
+  background-color: #C4A77D;
+  color: #0B100D;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(196, 167, 125, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-gold:hover {
+  background-color: #d1b892;
+  box-shadow: 0 6px 22px rgba(196, 167, 125, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-ghost-glass {
+  background: rgba(255, 255, 255, 0.04);
+  color: #F1F3ED;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(12px);
+  transition: all 0.25s ease-in-out;
+}
+
+.btn-ghost-glass:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.20);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}

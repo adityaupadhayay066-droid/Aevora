@@ -1,4 +1,4 @@
-name: AEVORA Security, Audit & Quality Pipeline
+name: TravelIQ Security, Audit & Quality Pipeline
 
 on:
   push:
@@ -26,10 +26,16 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             Ai travel assistant/backend/package-lock.json
+            Ai travel assistant/frontend/package-lock.json
 
       - name: Audit Backend Dependencies (Fail on Critical/High)
         run: |
           cd "Ai travel assistant/backend"
+          npm audit --audit-level=high
+
+      - name: Audit Frontend Dependencies (Fail on Critical/High)
+        run: |
+          cd "Ai travel assistant/frontend"
           npm audit --audit-level=high
 
   # ─── 2. Backend Security & Regression Suite ───
@@ -90,7 +96,30 @@ jobs:
           cd "Ai travel assistant/backend"
           npm test
 
-  # ─── 3. FastAPI AI Services Security & Auth Testing ───
+  # ─── 3. Frontend Production Build Verification ───
+  frontend-build:
+    name: Frontend Production Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd "Ai travel assistant/frontend"
+          npm ci --legacy-peer-deps
+
+      - name: Build Production Bundle (Vite)
+        run: |
+          cd "Ai travel assistant/frontend"
+          npm run build
+
+  # ─── 4. FastAPI AI Services Security & Auth Testing ───
   fastapi-tests:
     name: FastAPI AI Microservice Tests
     runs-on: ubuntu-latest
