@@ -1,23 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, Menu, X, ArrowRight, ArrowUpRight } from 'lucide-react';
+import { 
+  Sparkles, Menu, X, ArrowRight, ArrowUpRight, 
+  ChevronDown, LogOut, User as UserIcon, Compass 
+} from 'lucide-react';
 import { useScrollState } from '../../hooks/useScrollState';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isScrolled } = useScrollState(18);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  const { isScrolled } = useScrollState(16);
+  const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setUserMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false);
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+        setUserMenuOpen(false);
+      }
     };
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const navLinks = [
@@ -28,18 +50,18 @@ export default function Navbar() {
   ];
 
   const isActive = (path) => location.pathname === path;
-  const isHomePage = location.pathname === '/';
-  const shouldShowNavbar = !isHomePage || isScrolled;
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none transition-all duration-500 transform ${
-      shouldShowNavbar ? 'translate-y-0 opacity-100' : '-translate-y-12 opacity-0'
-    }`}>
-      {/* Floating Centered Pill Navigation Surface */}
-      <div className={`max-w-6xl mx-auto mt-4 sm:mt-5 ${shouldShowNavbar ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+    <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none">
+      {/* Floating Centered Pill Navigation Surface (Single unified topbar across app) */}
+      <div className="max-w-6xl mx-auto mt-3 sm:mt-4 pointer-events-auto">
         <nav
           aria-label="TravelIQ Navigation"
-          className="rounded-full transition-all duration-300 px-5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between border bg-[#111A14]/90 backdrop-blur-2xl border-white/14 shadow-[0_16px_36px_-10px_rgba(0,0,0,0.85)]"
+          className={`rounded-full transition-all duration-300 px-5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between border ${
+            isScrolled
+              ? 'bg-[#111A14]/95 backdrop-blur-2xl border-white/14 shadow-[0_16px_36px_-10px_rgba(0,0,0,0.85)]'
+              : 'bg-[#111A14]/80 backdrop-blur-xl border-white/10 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6)]'
+          }`}
         >
           {/* Left: TravelIQ Logo & Custom Brand Symbol */}
           <Link
@@ -93,7 +115,7 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right: Actions (AI Assistant, Log In, Get Started) */}
+          {/* Right: Actions (AI Assistant + Real Auth State) */}
           <div className="hidden md:flex items-center gap-3">
             {/* AI Assistant Pill */}
             <Link
@@ -104,22 +126,76 @@ export default function Navbar() {
               <span>AI Assistant</span>
             </Link>
 
-            {/* Log In Link */}
-            <Link
-              to="/login"
-              className="px-3 py-1.5 rounded-full text-xs lg:text-sm font-medium text-[#A6B1A7] hover:text-[#F1F3ED] transition-colors"
-            >
-              Log In
-            </Link>
+            {/* Real Logged-In User State */}
+            {isAuthenticated && user ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-[#17221A] hover:bg-[#1D2A21] border border-white/12 hover:border-[#C4A77D]/40 transition-all text-xs font-medium cursor-pointer"
+                  aria-expanded={userMenuOpen}
+                >
+                  <div className="w-6 h-6 rounded-full bg-[#315B40] text-[#F1F3ED] font-bold text-[11px] flex items-center justify-center border border-white/20">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <span className="text-[#F1F3ED] max-w-[100px] truncate">{user.name || user.email}</span>
+                  <ChevronDown className="w-3 h-3 text-[#A6B1A7]" />
+                </button>
 
-            {/* Get Started Button */}
-            <Link
-              to="/plan"
-              className="btn-forest inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs lg:text-sm font-semibold tracking-wide shadow-md hover:shadow-lg"
-            >
-              <span>Get Started</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+                {/* Real User Dropdown Menu */}
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#111A14]/95 backdrop-blur-2xl border border-white/15 p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3 py-2 border-b border-white/10 mb-2">
+                      <p className="text-xs font-semibold text-[#F1F3ED] truncate">{user.name || 'Member'}</p>
+                      <p className="text-[11px] text-[#A6B1A7] truncate font-mono">{user.email}</p>
+                      {user.role && (
+                        <span className="inline-block mt-1.5 text-[9px] uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[#C4A77D] font-mono">
+                          {user.role}
+                        </span>
+                      )}
+                    </div>
+                    <Link
+                      to="/plan"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-[#A6B1A7] hover:text-[#F1F3ED] hover:bg-white/5 transition-colors"
+                    >
+                      <Compass className="w-3.5 h-3.5 text-[#91B39A]" />
+                      <span>My Itineraries</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors mt-1 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                {/* Real Log In Link */}
+                <Link
+                  to="/login"
+                  className="px-3.5 py-1.5 rounded-full text-xs lg:text-sm font-medium text-[#A6B1A7] hover:text-[#F1F3ED] hover:bg-white/5 transition-colors"
+                >
+                  Log In
+                </Link>
+
+                {/* Real Get Started Button */}
+                <Link
+                  to="/login?mode=register"
+                  className="btn-forest inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs lg:text-sm font-semibold tracking-wide shadow-md hover:shadow-lg"
+                >
+                  <span>Get Started</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Toggle Button */}
@@ -145,8 +221,18 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 top-[76px] z-40 bg-[#0B100D]/95 backdrop-blur-2xl md:hidden px-4 py-6 border-t border-white/10 overflow-y-auto animate-in fade-in duration-200 pointer-events-auto">
+        <div className="fixed inset-0 top-[70px] z-40 bg-[#0B100D]/95 backdrop-blur-2xl md:hidden px-4 py-6 border-t border-white/10 overflow-y-auto animate-in fade-in duration-200 pointer-events-auto">
           <div className="flex flex-col gap-3 max-w-sm mx-auto">
+            {isAuthenticated && user && (
+              <div className="p-4 rounded-2xl bg-[#17221A] border border-white/10 mb-2">
+                <p className="text-sm font-semibold text-[#F1F3ED]">{user.name}</p>
+                <p className="text-xs text-[#A6B1A7] font-mono">{user.email}</p>
+                <span className="inline-block mt-2 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-[#C4A77D]">
+                  {user.role || 'Member'}
+                </span>
+              </div>
+            )}
+
             <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6F8D76] px-3 mb-1">
               TravelIQ Navigation
             </div>
@@ -176,20 +262,35 @@ export default function Navbar() {
               </span>
             </Link>
 
-            <Link
-              to="/login"
-              className="btn-ghost-glass text-center py-3 rounded-full text-xs font-medium mt-2"
-            >
-              Log In
-            </Link>
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className="w-full text-center py-3 rounded-full text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 mt-2 cursor-pointer"
+              >
+                Log Out
+              </button>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="btn-ghost-glass text-center py-3 rounded-full text-xs font-medium mt-2"
+                >
+                  Log In
+                </Link>
 
-            <Link
-              to="/plan"
-              className="btn-forest text-center py-3 rounded-full text-xs font-semibold flex items-center justify-center gap-2 shadow-lg"
-            >
-              <span>Get Started</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+                <Link
+                  to="/login?mode=register"
+                  className="btn-forest text-center py-3 rounded-full text-xs font-semibold flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <span>Get Started</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

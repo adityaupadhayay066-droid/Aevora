@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Lenis from 'lenis';
+import { AuthProvider } from '../context/AuthContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
@@ -45,17 +46,19 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B100D] text-[#F1F3ED] font-sans selection:bg-[#315B40] selection:text-[#F1F3ED] overflow-x-hidden">
-      {/* Floating Dark Luxury Glass Topbar */}
-      <Navbar />
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col bg-[#0B100D] text-[#F1F3ED] font-sans selection:bg-[#315B40] selection:text-[#F1F3ED] overflow-x-hidden">
+        {/* Single Unified Dark Luxury Glass Topbar */}
+        <Navbar />
 
-      {/* Main Page Outlet */}
-      <div className="flex-1">
-        <Outlet />
+        {/* Main Page Outlet */}
+        <div className="flex-1">
+          <Outlet />
+        </div>
+
+        {/* Global Luxury Footer */}
+        <Footer />
       </div>
-
-      {/* Global Luxury Footer */}
-      <Footer />
-    </div>
+    </AuthProvider>
   );
 }
