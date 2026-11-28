@@ -1,3 +1,0 @@
-/api/*  https://traveliq-backend.onrender.com/api/:splat  200!
-/ai/*   https://traveliq-ai-service.onrender.com/:splat  200!
-/*      /index.html                                       200
