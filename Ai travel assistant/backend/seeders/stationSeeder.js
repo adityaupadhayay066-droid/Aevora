@@ -71,6 +71,9 @@ const ESSENTIAL_STATIONS = [
   { station_code: 'BBS', station_name: 'BHUBANESWAR', city: 'Bhubaneswar', state: 'Odisha', latitude: 20.2644, longitude: 85.8395 },
   { station_code: 'CTC', station_name: 'CUTTACK', city: 'Cuttack', state: 'Odisha', latitude: 20.4625, longitude: 85.8830 },
   { station_code: 'PURI', station_name: 'PURI', city: 'Puri', state: 'Odisha', latitude: 19.8135, longitude: 85.8312 },
+  { station_code: 'RGDA', station_name: 'RAYAGADA', city: 'Rayagada', state: 'Odisha', latitude: 19.1756, longitude: 83.4105 },
+  { station_code: 'PVPT', station_name: 'PARVATIPURAM TN', city: 'Parvatipuram', state: 'Andhra Pradesh', latitude: 18.7770, longitude: 83.4258 },
+  { station_code: 'VZM', station_name: 'VIZIANAGRAM JN', city: 'Vizianagaram', state: 'Andhra Pradesh', latitude: 18.1114, longitude: 83.3956 },
 
   // Southern Hub
   { station_code: 'MAS', station_name: 'CHENNAI CENTRAL', city: 'Chennai', state: 'Tamil Nadu', latitude: 13.0827, longitude: 80.2707 },

@@ -323,15 +323,15 @@ export default function Navbar() {
           ==================================================================== */}
       <header 
         ref={navContainerRef}
-        className={`sticky top-0 z-50 w-full transition-all duration-200 bg-white dark:bg-[#1B242E] border-b ${
+        className={`sticky top-0 z-50 w-full transition-all duration-200 bg-[#0B100D]/85 backdrop-blur-xl border-b border-white/10 ${
           isScrolled 
-            ? 'border-[#E3E7EA] dark:border-[#293644] shadow-xs' 
-            : 'border-[#E3E7EA] dark:border-[#293644]'
+            ? 'shadow-2xl shadow-black/40' 
+            : ''
         }`}
       >
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 h-[64px] flex items-center justify-between gap-3 sm:gap-6">
           
-          {/* LEFT: AEVORA BRAND LOGO */}
+          {/* LEFT: TRAVELIQ BRAND LOGO */}
           <div className="flex items-center gap-3 shrink-0">
             <Logo size="md" withTagline={true} />
           </div>
@@ -349,14 +349,14 @@ export default function Navbar() {
                       onClick={() => toggleDropdown('ai-features')}
                       className={`h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer border ${
                         isActive || activeDropdown === 'ai-features'
-                          ? 'bg-[#EAF0F4] dark:bg-[#233240] text-[#244C66] dark:text-[#75A4C4] border-[#E3E7EA] dark:border-[#293644]'
-                          : 'bg-transparent text-[#66737D] dark:text-[#9CAAB5] border-transparent hover:bg-[#EEF2F4] dark:hover:bg-[#162029] hover:text-[#202A32] dark:hover:text-[#F0F4F7]'
+                          ? 'bg-[#1D2A21] text-[#F1F3ED] border-white/10'
+                          : 'bg-transparent text-[#A6B1A7] border-transparent hover:bg-white/5 hover:text-[#F1F3ED]'
                       }`}
                       aria-expanded={activeDropdown === 'ai-features'}
                     >
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive || activeDropdown === 'ai-features' ? 'text-[#244C66] dark:text-[#75A4C4]' : 'text-sky-500'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive || activeDropdown === 'ai-features' ? 'text-[#C4A77D]' : 'text-[#91B39A]'}`} />
                       <span>{cat.label}</span>
-                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 text-[#89939B] ${activeDropdown === 'ai-features' ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 text-[#6F8D76] ${activeDropdown === 'ai-features' ? 'rotate-180' : ''}`} />
                     </button>
 
                     <AnimatePresence>
@@ -366,13 +366,13 @@ export default function Navbar() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 4, scale: 0.99 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute left-0 top-[56px] w-[580px] sm:w-[620px] p-3.5 rounded-2xl bg-white dark:bg-[#18222D] border border-[#E3E7EA] dark:border-[#283545] shadow-2xl z-50"
+                          className="absolute left-0 top-[56px] w-[580px] sm:w-[620px] p-3.5 rounded-2xl bg-[#111A14]/95 border border-white/10 shadow-2xl backdrop-blur-2xl z-50 text-[#F1F3ED]"
                         >
-                          <div className="flex items-center justify-between px-2.5 pb-2 mb-2 border-b border-[#E3E7EA] dark:border-[#263544]">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                          <div className="flex items-center justify-between px-2.5 pb-2 mb-2 border-b border-white/10">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#C4A77D]">
                               AI Travel Intelligence
                             </span>
-                            <span className="text-[10px] font-medium text-[#89939B] dark:text-[#7A8895]">
+                            <span className="text-[10px] font-medium text-[#A6B1A7]">
                               Autonomous Coordination & Forecasts
                             </span>
                           </div>
@@ -710,13 +710,13 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => openAuthModal('login')}
-                  className="px-3 py-1.5 text-xs font-semibold text-[#202A32] dark:text-[#F0F4F7] hover:bg-[#EEF2F4] dark:hover:bg-[#162029] border border-[#E3E7EA] dark:border-[#293644] rounded-lg transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-[#F1F3ED] hover:bg-white/5 border border-white/10 rounded-lg transition-colors cursor-pointer"
                 >
                   Log In
                 </button>
                 <button
                   onClick={() => openAuthModal('signup')}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-lg transition-colors shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 text-xs font-bold text-[#F1F3ED] bg-[#315B40] hover:bg-[#3d6f4f] border border-[#91B39A]/20 rounded-lg transition-all shadow-md shadow-[#315B40]/25 cursor-pointer"
                 >
                   Sign Up
                 </button>

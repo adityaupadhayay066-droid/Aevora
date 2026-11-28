@@ -1,56 +1,43 @@
 /**
- * TravelIQ Official Brand Configuration & Identity System
- * Premium Dark Luxury Travel Intelligence & Mobility Platform.
+ * AEVORA Unified Brand & Design Tokens
+ * Dark Luxury Glass + Cinematic 3D Scenic Experience
  */
 
 export const BRAND = {
-  name: 'TravelIQ',
-  legalName: 'TravelIQ Global Technologies Inc.',
-  tagline: 'Explore Beyond Routes.',
-  subtitle: 'Discover destinations, compare journeys and experience intelligent travel planning with TravelIQ.',
-  philosophy: 'Explore. Connect. Experience.',
-  positioning: 'Dark Luxury Glass 3D Travel Intelligence Platform.',
-  version: '3.0.0',
-
+  name: 'Aevora',
+  legalName: 'Aevora Technologies Inc.',
+  tagline: 'The Journey Beyond Your Imaginary',
+  subTagline: 'Explore Beyond Routes.',
+  description: 'AI-powered multi-modal travel intelligence and mobility platform. Discover destinations, compare verified journeys across rail, domestic flights, and interstate buses with confidence.',
+  
+  // Strict Dark Luxury Palette Tokens
   colors: {
-    bgMain: '#0B100D',          // Main background
-    bgSecondary: '#111A14',     // Secondary background
-    bgCard: '#17221A',          // Card background
-    bgElevated: '#1D2A21',      // Elevated surface
-    primaryGreen: '#315B40',    // Primary emerald forest green
-    sage: '#91B39A',            // Sage green accent
-    mutedGreen: '#6F8D76',      // Muted green
-    textPrimary: '#F1F3ED',     // Primary text
-    textSecondary: '#A6B1A7',   // Secondary text
-    gold: '#C4A77D',            // Champagne gold accent
-    borderGlass: 'rgba(255, 255, 255, 0.10)',
-    borderAccent: 'rgba(196, 167, 125, 0.22)',
+    bgMain: '#0B100D',
+    bgSecondary: '#111A14',
+    bgCard: '#17221A',
+    bgElevated: '#1D2A21',
+    primaryForest: '#315B40',
+    primaryForestHover: '#3b6d4d',
+    sageGreen: '#91B39A',
+    mutedGreen: '#6F8D76',
+    goldAccent: '#C4A77D',
+    textPrimary: '#F1F3ED',
+    textSecondary: '#D0D7D1',
+    textMuted: '#8E9C91',
+    borderGlass: 'rgba(255, 255, 255, 0.14)',
+    borderSubtle: 'rgba(255, 255, 255, 0.08)',
+    surfaceGlass: 'rgba(17, 26, 20, 0.55)',
   },
 
-  gradients: {
-    primary: 'linear-gradient(135deg, #315B40 0%, #91B39A 100%)',
-    forestGlow: 'linear-gradient(135deg, #111A14 0%, #17221A 100%)',
-    glassSurface: 'linear-gradient(180deg, rgba(23, 34, 26, 0.75) 0%, rgba(17, 26, 20, 0.85) 100%)',
-    goldGlow: 'linear-gradient(135deg, #C4A77D 0%, #91B39A 100%)',
-  },
-
-  typography: {
-    headingFont: "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif",
-    bodyFont: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-    editorialFont: "'DM Serif Display', Georgia, serif",
-  },
-
-  assets: {
-    logo: '/brand/aevora-logo.svg',
-    logoDark: '/brand/aevora-logo-dark.svg',
-    logoLight: '/brand/aevora-logo-light.svg',
-    icon: '/brand/aevora-icon.svg',
-    favicon: '/favicon.svg',
+  fonts: {
+    heading: 'Manrope',
+    editorial: 'DM Serif Display',
+    body: 'Inter',
   },
 
   links: {
-    supportEmail: 'concierge@traveliq.ai',
-    securityEmail: 'security@traveliq.ai',
+    supportEmail: 'concierge@aevora.travel',
+    securityEmail: 'security@aevora.travel',
     docs: '/developer',
   },
 
@@ -81,11 +68,6 @@ export const BRAND = {
       icon: 'Sparkles',
     },
     {
-      title: 'Local Transportation Insights',
-      description: 'First-to-last-mile connectivity maps, station hubs, and local transit transfers.',
-      icon: 'MapPin',
-    },
-    {
       title: 'Real-Time Travel Information',
       description: 'Live rail delay forecasts, platform updates, and schedule notifications.',
       icon: 'Clock',
@@ -94,4 +76,3 @@ export const BRAND = {
 };
 
 export default BRAND;
-
