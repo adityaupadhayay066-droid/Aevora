@@ -86,7 +86,7 @@ export default function AIConciergePreview() {
             Conversational concierge, <span className="font-editorial italic font-normal text-[#C4A77D]">grounded</span>.
           </h2>
           <p className="text-[#A6B1A7] text-base sm:text-lg mt-3 font-light">
-            Ask complex travel queries in plain words. Aevora cross-references official transit tables, dynamic fares, and layovers with zero hallucination.
+            Ask complex travel queries in plain words. TravelIQ cross-references official transit tables, dynamic fares, and layovers with zero hallucination.
           </p>
         </div>
 

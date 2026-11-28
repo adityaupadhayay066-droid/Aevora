@@ -87,26 +87,28 @@ function ForegroundPineCanopy() {
   const meshRef = useRef();
 
   const geometry = useMemo(() => {
-    const geom = new THREE.PlaneGeometry(130, 36, 60, 20);
+    const geom = new THREE.PlaneGeometry(140, 40, 80, 30);
     geom.rotateX(-Math.PI / 2.45);
 
     const pos = geom.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
-      const pinePeaks = (Math.sin(x * 0.45) + Math.cos(x * 0.9 + 0.8) + Math.sin(x * 1.8) * 0.5) * 2.2;
-      pos.setZ(i, Math.max(0, pinePeaks));
+      const y = pos.getY(i);
+      // Soft organic rolling alpine terrain with gentle natural contours (no sharp triangle spikes)
+      const rollingFoothill = (Math.sin(x * 0.08) * 1.8 + Math.cos(y * 0.1) * 1.2 + Math.sin(x * 0.18 + 0.5) * 0.8);
+      pos.setZ(i, Math.max(0, rollingFoothill));
     }
     geom.computeVertexNormals();
     return geom;
   }, []);
 
   return (
-    <mesh ref={meshRef} geometry={geometry} position={[0, -10.5, -16]}>
+    <mesh ref={meshRef} geometry={geometry} position={[0, -11.5, -18]}>
       <meshStandardMaterial
-        color="#080F0B"
-        roughness={0.98}
-        metalness={0.02}
-        flatShading={true}
+        color="#08100C"
+        roughness={0.92}
+        metalness={0.05}
+        flatShading={false}
       />
     </mesh>
   );
