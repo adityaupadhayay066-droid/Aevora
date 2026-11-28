@@ -189,6 +189,7 @@ function AnimatedRoutes() {
         <Route path="/support" element={<PageWrapper><Navbar /><SupportPage /></PageWrapper>} />
         <Route path="/support/ticket/:id" element={<PageWrapper><Navbar /><TicketDetail /></PageWrapper>} />
         <Route path="/hotels" element={<PageWrapper><Navbar /><HotelsView /></PageWrapper>} />
+        <Route path="/food/restaurant/:id" element={<PageWrapper><Navbar /><RestaurantDetails /></PageWrapper>} />
 
         <Route path="/dashboard" element={
           <ProtectedRoute><DashboardLayout><PageWrapper><Dashboard /></PageWrapper></DashboardLayout></ProtectedRoute>
